@@ -17,6 +17,7 @@ OUTPUT_TEMPLATE = {
   "Life Events": ["graduation", "vehicle accident"]
 }
 
+
 def retrieve_contents_from_json(json_file_path):
     try:
         with open(json_file_path, 'r') as file:

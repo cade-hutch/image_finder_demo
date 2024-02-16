@@ -24,6 +24,7 @@ def retrieve_contents_from_json(json_file_path):
         print(f"Error decoding JSON file: {json_file_path}")
         return None
 
+
 def handle_faulty_response_format(res):
     res_list = []
     if "'''" in res:
@@ -94,6 +95,7 @@ def rephrase_prompt(api_key, orig_prompt):
     new_prompt = response.choices[0].message.content
     return new_prompt
 
+
 def retrieve_and_open(images_dir, image_descriptions_file, retrieval_prompt, rephrase=True):
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)
     req_start_time = time.perf_counter()
@@ -148,6 +150,7 @@ def retrieve_and_open(images_dir, image_descriptions_file, retrieval_prompt, rep
                     subprocess.run([OPEN_PNG_CMD, os.path.join(images_dir, pic)])
                 except Exception as e:
                     print(f"Error opening the image: {e}")
+
 
 def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, rephrase=False):
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)

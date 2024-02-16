@@ -35,9 +35,11 @@ payload = {
   "max_tokens": 300
 }
 
+
 def encode_image(image_path):
   with open(image_path, "rb") as image_file:
     return base64.b64encode(image_file.read()).decode('utf-8')
+
 
 def append_to_json_file(file_path, data):
     try:
@@ -58,6 +60,7 @@ def append_to_json_file(file_path, data):
     with open(file_path, 'w') as file:
         json.dump(existing_data, file, indent=2)
     #print(f"Data appended to {file_path} successfully.")
+
 
 def get_file_names_from_json(json_file_path):
     try:
@@ -82,6 +85,7 @@ def get_file_names_from_json(json_file_path):
         print(f"Error decoding JSON: {e}")
         return None
 
+
 def find_new_pic_files(images_dir, descriptions_file):
     print('descr_file:', descriptions_file)
     existing_pictures = get_file_names_from_json(descriptions_file)
@@ -95,6 +99,7 @@ def find_new_pic_files(images_dir, descriptions_file):
            new_images.append(pic)
     print(f"Found {len(new_images)} new images.")
     return new_images
+
 
 def rename_files_in_directory(directory_path):
     """
@@ -123,6 +128,7 @@ def rename_files_in_directory(directory_path):
             os.rename(file_path, new_file_path)
             if file_path != new_file_path:
                 print(f"Renamed '{filename}' to '{new_filename}'")
+
 
 def generate_image_descrptions(images_dir):
     base_dir = os.path.dirname(os.path.dirname(images_dir))

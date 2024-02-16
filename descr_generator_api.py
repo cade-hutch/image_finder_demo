@@ -19,6 +19,7 @@ def are_all_files_png(directory_path):
                 return False
     return True
 
+
 def create_file(path):
     if not os.path.exists(path):
         try:
