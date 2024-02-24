@@ -26,6 +26,8 @@ def retrieve_contents_from_json(json_file_path):
 
 
 def handle_faulty_response_format(res):
+    print("FAULTY RESPONSE:")
+    print(res)
     res_list = []
     if "'''" in res:
         clean_res = res.replace('json', '', 1).strip()
@@ -176,3 +178,53 @@ def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, 
     # Replace single quotes with double quotes
     res = res.replace("'", "\"")
     print(res)
+
+
+def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, rephrase=True):
+    image_descriptions = retrieve_contents_from_json(image_descriptions_file)
+    req_start_time = time.perf_counter()
+    if rephrase:
+        retrieval_prompt = rephrase_prompt(api_key, retrieval_prompt)
+        print(f"Prompt rephrased to: {retrieval_prompt}")
+    response = client.chat.completions.create(
+    model="gpt-4-1106-preview",
+    messages=[
+        {"role": "system", "content": """You are an assistant for finding image file names based on the associated image descriptions given for each photo.
+                                        Here are image file names and corresponding image descriptions in JSON format: {}
+
+                                        The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo.
+
+                                        For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description.
+                                        Provide your answer as a list of strings. Simply provide the desired output list, do not include additional explaination.
+                                    """.format(image_descriptions)},
+        {"role": "user", "content": f"{retrieval_prompt}"},
+    ])
+
+    res = response.choices[0].message.content
+    # Replace single quotes with double quotes
+    res = res.replace("'", "\"")
+    # Safely evaluate the string to get a list
+    req_stop_time = time.perf_counter()
+    
+    output_images = []
+    try:
+        output_images = ast.literal_eval(res)
+    except ValueError:
+        print("ValueError: The input is not a valid Python literal.")
+    except SyntaxError:
+        print("SyntaxError: The input string contains a syntax error.")
+        formatted_output = handle_faulty_response_format(res)
+        print(type(res))
+        print(res)
+        print("NEW OUT")
+        print(formatted_output)
+        if type(formatted_output) == list:
+            output_images = []
+            for s in formatted_output:
+                if s.endswith('.png'):
+                    output_images.append(s)
+
+    print(f"Got response in {round(req_stop_time - req_start_time, 2)} seconds")
+    print(f"{len(output_images)} images")
+    print(output_images)
+    return output_images

@@ -5,8 +5,18 @@ import os
 import json
 import time
 
-api_key = os.environ['OPENAI_DEMO_KEY']
+if os.environ['OPENAI_DEMO_KEY']:
+    api_key = os.environ['OPENAI_DEMO_KEY']
+else:
+    print("missing OPENAI_DEMO_KEY environment variable")
+    exit()
+
 client = openai.OpenAI(api_key=api_key)
+
+image_question = """The following is an image from an Apple iPhone camera roll. First, determine if the image is a screenshot or was taken from the camera. If the image is a screenshot, describes it's contents and determine what application is being displayed.
+If the image is taken from a camera, describe all of it's contents and include elements (if appplicable) such as the main subject, what is in the foreground and background, and the location of the image.
+The first sentence of your output should be either "This is a screenshot." or "This is NOT a screenshot." Then, provide the rest of your answer.
+"""
 
 headers = {
   "Content-Type": "application/json",
@@ -21,7 +31,7 @@ payload = {
       "content": [
         {
           "type": "text",
-          "text": "What is in this image?"
+          "text": f"{image_question}"
         },
         {
           "type": "image_url",
@@ -32,7 +42,7 @@ payload = {
       ]
     }
   ],
-  "max_tokens": 300
+  "max_tokens": 400
 }
 
 

@@ -15,7 +15,6 @@ def are_all_files_png(directory_path):
         # Check if it's a file and if the extension is not .png
         if os.path.isfile(file_path) and not filename.lower().endswith('.png'):
             if not filename.endswith('.DS_Store'):
-                
                 return False
     return True
 
