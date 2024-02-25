@@ -24,7 +24,7 @@ cd into the created image folder and run:
 streamlit run ../../app.py
 ```
 
-There is a button to kick off description generation. If an error occurs, click the button again, it will pick up where it left off.
+There is a button to kick off description generation. If an error occurs, refresh page and click the button again, it will pick up where it left off.
 
 After successful description generation, the page for image retrieval should come up.
 

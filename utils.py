@@ -4,7 +4,7 @@ import json
 def is_valid_image_directory(images_dir_path):
     is_dir = os.path.isdir(images_dir_path)
     is_all_pngs = are_all_files_png(images_dir_path)
-    is_correct_path = os.path.dirname(images_dir_path).endswith('image_finder_demo/image_base')
+    is_correct_path = os.path.dirname(images_dir_path).endswith(os.path.join('image_finder_demo','image_base'))
     if is_dir and is_all_pngs and is_correct_path:
         return True
     else:
