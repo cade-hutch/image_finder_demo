@@ -9,7 +9,7 @@ from openai import OpenAI
 
 OPEN_PNG_CMD = 'open'
 
-api_key = os.environ['OPENAI_DEMO_KEY']
+api_key = os.environ['IMAGE_FINDER_DEMO_KEY']
 client = OpenAI(api_key=api_key)
 
 def retrieve_contents_from_json(json_file_path):

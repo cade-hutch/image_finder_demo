@@ -1,19 +1,31 @@
-Using python 3.11.5
+**Using python 3.11.5**
 
-#STEP 1:
-Create OpenAI api key. In terminal store as environment variable 'OPENAI_DEMO_KEY':
-  export OPENAI_DEMO_KEY="<api key>"
+#STEP 1:  
+Create an OpenAI api key. In terminal store as environment variable 'IMAGE_FINDER_DEMO_KEY':
 
-#STEP 2:
-Install python requirements with "pip install -r requirements.txt".
+```
+export IMAGE_FINDER_DEMO_KEY="<api_key>"
+```
 
-#STEP 3:
-Create a folder within 'image_base' folder and to put PNG images in. Max file size is 20MB.
+#STEP 2:  
+Install python requirements:
 
-#STEP 4:
-In terminal, cd into created image folder, run description generator script(descr_generatory_api.py).
-If an error occurs before finishing all images, run the script again. It will pick up where it left off.
+```
+pip install -r requirements.txt
+```
 
-#STEP 5:
-After description generation is successful, image retrieval app(retriever_app.py) can be run in same image folder.
-Run with "streamlit run /path/to/retriever_app.py"
+#STEP 3:  
+Create a folder within 'image_base' folder to put PNG images in. Max image size is 20MB.
+
+#STEP 4:  
+cd into the created image folder and run:
+
+```
+streamlit run ../../app.py
+```
+
+There is a button to kick off description generation. If an error occurs, click the button again, it will pick up where it left off.
+
+After successful description generation, the page for image retrieval should come up.
+
+NOTE: Some output will still be in terminal, currently working to display everything in app.

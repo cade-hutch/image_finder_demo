@@ -5,7 +5,7 @@ import re
 from openai import OpenAI
 
 
-api_key = os.environ['OPENAI_DEMO_KEY']
+api_key = os.environ['IMAGE_FINDER_DEMO_KEY']
 client = OpenAI(api_key=api_key)
 
 OUTPUT_TEMPLATE = {

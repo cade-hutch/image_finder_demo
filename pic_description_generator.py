@@ -5,10 +5,10 @@ import os
 import json
 import time
 
-if os.environ['OPENAI_DEMO_KEY']:
-    api_key = os.environ['OPENAI_DEMO_KEY']
+if os.environ['IMAGE_FINDER_DEMO_KEY']:
+    api_key = os.environ['IMAGE_FINDER_DEMO_KEY']
 else:
-    print("missing OPENAI_DEMO_KEY environment variable")
+    print("missing IMAGE_FINDER_DEMO_KEY environment variable")
     exit()
 
 client = openai.OpenAI(api_key=api_key)
