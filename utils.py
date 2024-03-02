@@ -1,6 +1,7 @@
 import os
 import json
 
+
 def is_valid_image_directory(images_dir_path):
     is_dir = os.path.isdir(images_dir_path)
     is_all_pngs = are_all_files_png(images_dir_path)
@@ -10,6 +11,7 @@ def is_valid_image_directory(images_dir_path):
     else:
         #TODO: Error messages
         return False
+
 
 def are_all_files_png(directory_path):
     for filename in os.listdir(directory_path):

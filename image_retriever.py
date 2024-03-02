@@ -4,6 +4,7 @@ import subprocess
 import json
 import ast
 import time
+import re
 
 from openai import OpenAI
 
@@ -50,6 +51,12 @@ def handle_faulty_response_format(res):
         return file_names
     
     elif not res_list: #handle plaintext or with []
+        if type(res) == str:
+            print('trying format fix 2.5')
+            extract_pattern = re.compile(r"(?:^|[\s\"'])([^\"'\s]+)\.png")
+            res_list = extract_pattern.findall(res)
+            return [s + '.png' for s in res_list]
+
         print("trying format fix 3")
         # Remove the surrounding brackets and strip whitespace
         stripped_string = res.strip('[] \n')
@@ -93,7 +100,6 @@ def rephrase_prompt(api_key, orig_prompt):
         {"role": "user", "content": "Based on the given rules and examples, please rephrase the following: {}".format(orig_prompt)},
     ]
     )
-
     new_prompt = response.choices[0].message.content
     return new_prompt
 
@@ -136,7 +142,7 @@ def retrieve_and_open(images_dir, image_descriptions_file, retrieval_prompt, rep
         print(res)
         print("NEW OUT")
         print(formatted_output)
-        if type(formatted_output) == list:
+        if type(formatted_output) == list: #TODO: needed?
             output_images = []
             for s in formatted_output:
                 if s.endswith('.png'):
@@ -218,7 +224,7 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, r
         print(res)
         print("NEW OUT")
         print(formatted_output)
-        if type(formatted_output) == list:
+        if type(formatted_output) == list: #TODO: needed?
             output_images = []
             for s in formatted_output:
                 if s.endswith('.png'):
