@@ -118,6 +118,7 @@ def rename_files_in_directory(directory_path):
     Args:
     directory_path (str): The path to the directory whose files need to be renamed.
     """
+    print('renaming uploaded images')
     # Check if the provided path is indeed a directory
     if not os.path.isdir(directory_path):
         print("The provided path is not a directory.")
