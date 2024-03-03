@@ -35,21 +35,16 @@ def retriever_page():
     st.title('Image Retriever')
     st.write("find images from {}".format(base_name))
 
-    if 'button_pressed' not in st.session_state:
-        st.session_state['button_pressed'] = False
+    with st.form('prompt_submission'):
+        text_input_col, submit_btn_col = st.columns([5, 1])
+        with text_input_col:
+            user_input = st.text_input(label="why is this required", label_visibility='collapsed', key="user_input", placeholder="What would you like to find?")
 
-    text_input_col, submit_btn_col = st.columns([5, 1])
-    with text_input_col:
-        user_input = st.text_input(label="why is this required", label_visibility='collapsed', key="user_input", on_change=lambda: st.session_state.update(button_pressed=True), placeholder="What would you like to find?")
-
-    with submit_btn_col:
-        #TODO: calls send_request twice
-        if st.button(label='Send'):
-            st.session_state['button_pressed'] = True
-
-    if st.session_state.button_pressed and user_input:
-        st.session_state.button_pressed = False
-        send_request()
+        with submit_btn_col:
+            submit_button = st.form_submit_button(label='Send')
+ 
+    if submit_button:
+        send_request(user_input)
 
     for item_type, content in st.session_state.history:
         if item_type == 'text':
@@ -59,26 +54,8 @@ def retriever_page():
             st.image(content, caption=image_name)
 
 
-def on_text_input_change():
-    print("on_text_input change")
-    send_request()
-
-
-def on_button_submit():
-    print('submit button pressed')
-    if not request_in_progress:
-        print('running req via button press')
-        send_request()
-    else:
-        print('already sent req')
-
-
-def send_request():
-    #global request_in_progress
-    #request_in_progress = True
-    print(f"CALLED SEND_REQUEST:")
-    prompt = st.session_state.user_input
-    print(prompt)
+def send_request(prompt=None):
+    print(f"SENDING REQUEST: {prompt}")
 
     if prompt:
         st.session_state.history = []
@@ -86,36 +63,26 @@ def send_request():
         #TODO: make retriee function return that modified phrase, return that to be displayed
         st.session_state.history.append(('text', f"You: {prompt}"))
         
-        # Get response from LLM (implement this function based on your LLM API)
-        #llm_response = retrieve_and_return()
         try:
             start_t = time.perf_counter()
             output_image_names = retrieve_and_return(images_dir, json_file_path, prompt)
-            print('output images lsit:', output_image_names)
-            print('request successful')
             end_t = time.perf_counter()
+            print('RESPONSE RECEIVED')
+            print('output images list:', output_image_names)
             retrieve_time = format(end_t - start_t, '.2f')
             st.session_state.history.append(('text', f"Found {len(output_image_names)} images in {retrieve_time} seconds"))
         except:
             print('error during request')
             output_image_names = []
             st.session_state.history.append(('text', f"Error in image retrieval, try again."))
-        # Append LLM response to history
-        #st.session_state['history'].append(f"LLM: {llm_response}")
         
         for img in output_image_names:
             img_path = os.path.join(images_dir, img)
             if os.path.exists(img_path):
                 st.session_state.history.append(('image', img_path))
 
-        # Clear input box after sending
-        #TODO: breaks
-        #st.session_state.user_input = ""
-    #request_in_progress = False
-
 #main function
 if 'history' not in st.session_state:
-    print('clearing history')
     st.session_state.history = []
 
 if is_valid_image_directory(images_dir):
