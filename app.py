@@ -30,7 +30,7 @@ def send_request(prompt):
             json_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
 
             start_t = time.perf_counter()
-            output_image_names = retrieve_and_return(images_dir, json_file_path, prompt)
+            output_image_names = retrieve_and_return(images_dir, json_file_path, prompt, st.session_state.user_openai_api_key)
             end_t = time.perf_counter()
 
             print('RESPONSE RECEIVED')

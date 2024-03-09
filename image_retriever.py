@@ -10,8 +10,6 @@ from openai import OpenAI
 
 OPEN_PNG_CMD = 'open'
 
-api_key = os.environ['IMAGE_FINDER_DEMO_KEY']
-client = OpenAI(api_key=api_key)
 
 def retrieve_contents_from_json(json_file_path):
     try:
@@ -104,7 +102,8 @@ def rephrase_prompt(api_key, orig_prompt):
     return new_prompt
 
 
-def retrieve_and_open(images_dir, image_descriptions_file, retrieval_prompt, rephrase=True):
+def retrieve_and_open(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=True):
+    client = OpenAI(api_key=api_key)
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)
     req_start_time = time.perf_counter()
     if rephrase:
@@ -160,7 +159,8 @@ def retrieve_and_open(images_dir, image_descriptions_file, retrieval_prompt, rep
                     print(f"Error opening the image: {e}")
 
 
-def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, rephrase=False):
+def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=False):
+    client = OpenAI(api_key=api_key)
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)
     req_start_time = time.perf_counter()
     if rephrase:
@@ -186,7 +186,8 @@ def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, 
     print(res)
 
 
-def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, rephrase=True):
+def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=True):
+    client = OpenAI(api_key=api_key)
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)
     req_start_time = time.perf_counter()
     if rephrase:
