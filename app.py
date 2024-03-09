@@ -7,7 +7,11 @@ from pic_description_generator import generate_image_descrptions, rename_files_i
 
 from utils import retrieve_or_generate, is_valid_image_directory, validate_openai_api_key
 
-key = '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'
+def list_image_dirs():
+    curr_dir = os.path.dirname(os.path.realpath(__file__))
+    image_base_dir = os.path.join(curr_dir, 'image_base')
+    for f in os.listdir(image_base_dir):
+        st.title(f)
 
 def send_request(prompt):
     # Your function to send and receive data from an API
@@ -84,8 +88,12 @@ def on_generate_button_submit(uploaded_images, generate=True):
     if generate:
         rename_files_in_directory(images_dir)
         generate_total_time = generate_image_descrptions(images_dir, api_key=st.session_state.user_openai_api_key)
-        generate_total_time = format(generate_total_time, '.2f')
-        st.success(f"Finished generating descriptions in {generate_total_time} seconds")
+        if type(generate_total_time) == list: #unsuccesful generate/did not finish
+            st.error('Error occured while generating... press generate to try again.')
+            st.error(generate_total_time[0])
+        else:
+            generate_total_time = format(generate_total_time, '.2f')
+            st.success(f"Finished generating descriptions in {generate_total_time} seconds")
 
     return True #TODO: handle good/bad return
 
@@ -113,6 +121,7 @@ def retrieval_page():
 
 def main():
     st.title('Image Finder') #TODO: align center
+    list_image_dirs()
 
     #API key submission page
     if not st.session_state.submitted_api_key:
@@ -135,7 +144,7 @@ def main():
                 st.error('Error occured while validating API key.... refresh page to try again.')
 
     #Image upload page
-    if st.session_state.submitted_api_key and not st.session_state.submitted_images:
+    if st.session_state.submitted_api_key and not st.session_state.has_submitted_images:
         st.write('Submit Images for description generation')
 
         uploaded_files = st.file_uploader("Choose images...", type=['png'], accept_multiple_files=True)
@@ -144,10 +153,10 @@ def main():
             generate_submit_button = st.button(label=f"Click here to generate descriptions for {len(uploaded_files)} images")
             if generate_submit_button:
                 if on_generate_button_submit(uploaded_files):
-                    st.session_state.submitted_images = True
+                    st.session_state.has_submitted_images = True
                     #retrieval_page()
     
-    if st.session_state.submitted_images:
+    if st.session_state.has_submitted_images:
         retrieval_page()
 
 
@@ -157,8 +166,11 @@ if 'submitted_api_key' not in st.session_state:
     st.session_state.submitted_api_key = False
     #st.session_state.user_api_key = ""?
 
-if 'submitted_images' not in st.session_state:
-    st.session_state.submitted_images = False
+if 'has_submitted_images' not in st.session_state:
+    st.session_state.has_submitted_images = False
+
+if 'uploaded_images' not in st.session_state:
+    st.session_state.uploaded_images = []
 
 if 'history' not in st.session_state:
     st.session_state.history = []

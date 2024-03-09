@@ -178,7 +178,7 @@ def generate_image_descrptions(images_dir, api_key):
       except KeyError as e:
          print(f"KeyError occurred: {e}")
          print(response.json())
-         assert False, 'Bad Response'
+         return [e]
       description_obj = {
           "file_name" : f"{pic}",
           "description" : f"{response_description}"
