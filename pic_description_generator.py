@@ -5,45 +5,49 @@ import os
 import json
 import time
 
-if os.environ['IMAGE_FINDER_DEMO_KEY']:
-    api_key = os.environ['IMAGE_FINDER_DEMO_KEY']
-else:
-    print("missing IMAGE_FINDER_DEMO_KEY environment variable")
-    exit()
+from utils import reduce_png_quality
 
-client = openai.OpenAI(api_key=api_key)
+# if os.environ['IMAGE_FINDER_DEMO_KEY']:
+#     api_key = os.environ['IMAGE_FINDER_DEMO_KEY']
+# else:
+#     print("missing IMAGE_FINDER_DEMO_KEY environment variable")
+#     exit()
 
-image_question = """The following is an image from an Apple iPhone camera roll. First, determine if the image is a screenshot or was taken from the camera. If the image is a screenshot, describes it's contents and determine what application is being displayed.
+
+
+IMAGE_QUESTION = """The following is an image from an Apple iPhone camera roll. First, determine if the image is a screenshot or was taken from the camera. If the image is a screenshot, describes it's contents and determine what application is being displayed.
 If the image is taken from a camera, describe all of it's contents and include elements (if appplicable) such as the main subject, what is in the foreground and background, and the location of the image.
 The first sentence of your output should be either "This is a screenshot." or "This is NOT a screenshot." Then, provide the rest of your answer.
 """
 
-headers = {
+def headers(api_key):
+  return {
   "Content-Type": "application/json",
   "Authorization": f"Bearer {api_key}"
-}
+  }
 
-payload = {
-  "model": "gpt-4-vision-preview",
-  "messages": [
-    {
-      "role": "user",
-      "content": [
-        {
-          "type": "text",
-          "text": f"{image_question}"
-        },
-        {
-          "type": "image_url",
-          "image_url": {
-            "url": ""
+def default_payload(image_question):
+  return {
+    "model": "gpt-4-vision-preview",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": f"{image_question}"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": ""
+            }
           }
-        }
-      ]
-    }
-  ],
-  "max_tokens": 400
-}
+        ]
+      }
+    ],
+    "max_tokens": 400
+  }
 
 
 def encode_image(image_path):
@@ -141,7 +145,10 @@ def rename_files_in_directory(directory_path):
                 print(f"Renamed '{filename}' to '{new_filename}'")
 
 
-def generate_image_descrptions(images_dir):
+def generate_image_descrptions(images_dir, api_key):
+    #TODO: needed?
+    client = openai.OpenAI(api_key=api_key)
+
     base_dir = os.path.dirname(os.path.dirname(images_dir))
     descriptions_folder_path = os.path.join(base_dir, 'json')
 
@@ -149,17 +156,19 @@ def generate_image_descrptions(images_dir):
     json_info_file_path = os.path.join(descriptions_folder_path, base_name + '_info.json')
     json_description_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
 
+    #TODO: get all images, not just new, to track progress if an error occurs during prior run
     new_pics = find_new_pic_files(images_dir, json_description_file_path)
 
-    a = '/Users/cadeh/Desktop/MyCode/Workspace/finder/image_finder_demo/json'
     start_time = time.perf_counter()
     for i, pic in enumerate(new_pics):
       print('({}/{}) Getting description for {}'.format(i+1, len(new_pics), pic))
       img_path = os.path.join(images_dir, pic)
+      reduce_png_quality(img_path, img_path)
       base64_image = encode_image(img_path)
       start_time_req = time.perf_counter()
+      payload = default_payload(IMAGE_QUESTION)
       payload['messages'][0]['content'][1]['image_url']['url'] = f"data:image/jpeg;base64,{base64_image}"
-      response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+      response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers(api_key), json=payload)
       stop_time_req = time.perf_counter()
       request_time = stop_time_req - start_time_req
       print('response recieved for {} in {} seconds'.format(pic, request_time))
