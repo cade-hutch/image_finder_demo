@@ -13,6 +13,7 @@ def list_image_dirs():
     for f in os.listdir(image_base_dir):
         st.title(f)
 
+
 def send_request(prompt):
     # Your function to send and receive data from an API
     print('-----')
@@ -53,23 +54,27 @@ def send_request(prompt):
                 st.session_state.history.append(('image', img_path))
 
 
-def create_image_dir_name(image_base_dir):
+def create_image_dir_name(api_key):
     #TODO: name after api_key
-    i = 1
-    image_dirname = 'app_user' + str(i)
-    image_dirpath = os.path.join(image_base_dir, image_dirname)
-    while os.path.exists(image_dirpath):
-        i += 1
-        image_dirname = 'app_user' + str(i)
-        image_dirpath = os.path.join(image_base_dir, image_dirname)
+    #TODO: check exists?
+    return api_key[-5:]
 
-    return image_dirname
+
+def user_folder_exists(api_key):
+    folder_name = api_key[-5:]
+    curr_dir = os.path.dirname(os.path.realpath(__file__))
+    image_base_dir = os.path.join(curr_dir, 'image_base')
+    for f in os.listdir(image_base_dir):
+        if f == folder_name:
+            st.session_state.images_dir = os.path.join(image_base_dir, folder_name)
+            return True
+    return False
 
 
 def on_generate_button_submit(uploaded_images, generate=True):
     curr_dir = os.path.dirname(os.path.realpath(__file__))
     image_base_dir = os.path.join(curr_dir, 'image_base')
-    image_dir_name = create_image_dir_name(image_base_dir)
+    image_dir_name = create_image_dir_name(st.session_state.user_openai_api_key)
     images_dir = os.path.join(image_base_dir, image_dir_name)
     st.session_state.images_dir = images_dir
     if not os.path.exists(images_dir):
@@ -99,7 +104,7 @@ def on_generate_button_submit(uploaded_images, generate=True):
 
 
 def retrieval_page():
-    #st.title('Image retriever')
+    st.text("Search for images submitted by API Key: {}".format(st.session_state.user_openai_api_key))
     with st.form('prompt_submission'):
         text_input_col, submit_btn_col = st.columns([5, 1])
         with text_input_col:
@@ -121,7 +126,7 @@ def retrieval_page():
 
 def main():
     st.title('Image Finder') #TODO: align center
-    list_image_dirs()
+    #list_image_dirs()
 
     #API key submission page
     if not st.session_state.submitted_api_key:
@@ -139,12 +144,15 @@ def main():
             if validate_openai_api_key(user_api_key_input):
                 st.session_state.user_openai_api_key = user_api_key_input
                 st.session_state.submitted_api_key = True
+                if user_folder_exists(user_api_key_input):
+                    st.session_state.api_key_exists = True
                 st.success('API key validated')
             else:
                 st.error('Error occured while validating API key.... refresh page to try again.')
 
     #Image upload page
-    if st.session_state.submitted_api_key and not st.session_state.has_submitted_images:
+    if st.session_state.submitted_api_key and not st.session_state.has_submitted_images and not st.session_state.api_key_exists:
+        #TODO: button to skip upload for existing user/api_key
         st.write('Submit Images for description generation')
 
         uploaded_files = st.file_uploader("Choose images...", type=['png'], accept_multiple_files=True)
@@ -156,15 +164,21 @@ def main():
                     st.session_state.has_submitted_images = True
                     #retrieval_page()
     
-    if st.session_state.has_submitted_images:
+    if st.session_state.has_submitted_images or st.session_state.api_key_exists:
+        if st.session_state.api_key_exists and st.session_state.show_existing_images_info:
+            st.info('Found Existing images for submitted API Key.')
+            st.session_state.show_existing_images_info = False
         retrieval_page()
 
 
 
-#main
+#app start point
 if 'submitted_api_key' not in st.session_state:
     st.session_state.submitted_api_key = False
-    #st.session_state.user_api_key = ""?
+    #st.session_state.user_openai_api_key = ""?
+
+if 'api_key_exists' not in st.session_state:
+    st.session_state.api_key_exists = False
 
 if 'has_submitted_images' not in st.session_state:
     st.session_state.has_submitted_images = False
@@ -178,14 +192,7 @@ if 'history' not in st.session_state:
 if 'images_dir' not in st.session_state:
     st.session_state.images_dir = ""
 
+if 'show_existing_images_info' not in st.session_state:
+    st.session_state.show_existing_images_info = True
+
 main()
-
-# # Use a form to batch the input and button interactions
-# with st.form("my_form"):
-#     input_data = st.text_input("Enter your data")
-#     submit_button = st.form_submit_button("Submit")
-
-# # When the user presses the submit button, the code below the form is executed.
-# if submit_button:
-#     response = send_request(input_data)
-#     st.write(response)
