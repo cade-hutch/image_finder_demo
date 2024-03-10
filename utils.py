@@ -119,7 +119,7 @@ def validate_openai_api_key(openai_api_key):
         )
         if response.choices[0].message.content:
             return True
-    #TODO: erro code for invalid key is 401
+    #TODO: error code for invalid key is 401
     except Exception as e:
         print(f"An error occurred: {e}")
         return False

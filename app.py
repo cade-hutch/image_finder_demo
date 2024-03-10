@@ -4,14 +4,7 @@ import streamlit as st
 
 from image_retriever import retrieve_and_return
 from pic_description_generator import generate_image_descrptions, rename_files_in_directory
-
 from utils import retrieve_or_generate, is_valid_image_directory, validate_openai_api_key
-
-def list_image_dirs():
-    curr_dir = os.path.dirname(os.path.realpath(__file__))
-    image_base_dir = os.path.join(curr_dir, 'image_base')
-    for f in os.listdir(image_base_dir):
-        st.title(f)
 
 
 def send_request(prompt):
@@ -55,7 +48,6 @@ def send_request(prompt):
 
 
 def create_image_dir_name(api_key):
-    #TODO: name after api_key
     #TODO: check exists?
     return api_key[-5:]
 
@@ -125,8 +117,24 @@ def retrieval_page():
 
 
 def main():
-    st.title('Image Finder') #TODO: align center
-    #list_image_dirs()
+    st.title('Image Finder')
+    footer = """
+     <style>
+     .footer {
+     position: fixed;
+     left: 0;
+     bottom: 0;
+     width: 100%;
+     background-color: #111;
+     color: white;
+     text-align: center;
+     }
+     </style>
+     <div class="footer">
+     <p>By Cade Hutcheson</p>
+     </div>
+     """
+    st.markdown(footer, unsafe_allow_html=True)
 
     #API key submission page
     if not st.session_state.submitted_api_key:
@@ -169,7 +177,6 @@ def main():
             st.info('Found Existing images for submitted API Key.')
             st.session_state.show_existing_images_info = False
         retrieval_page()
-
 
 
 #app start point
