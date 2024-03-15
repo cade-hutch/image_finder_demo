@@ -3,8 +3,8 @@ import time
 import streamlit as st
 
 from image_retriever import retrieve_and_return
-from pic_description_generator import generate_image_descrptions, rename_files_in_directory
-from utils import retrieve_or_generate, is_valid_image_directory, validate_openai_api_key
+from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir
+from utils import retrieve_or_generate, is_valid_image_directory, validate_openai_api_key, get_image_count
 
 
 def send_request(prompt):
@@ -84,7 +84,14 @@ def on_generate_button_submit(uploaded_images, generate=True):
 
     if generate:
         rename_files_in_directory(images_dir)
-        generate_total_time = generate_image_descrptions(images_dir, api_key=st.session_state.user_openai_api_key)
+        new_images = get_new_pics_dir(images_dir)
+        generate_total_time = 0.0
+        if new_images:
+            for i, generation_time in enumerate(generate_image_descrptions(new_images, images_dir, st.session_state.user_openai_api_key)):
+                generate_total_time += generation_time
+                st.success(f"Description generated for {new_images[i]} in {generation_time} seconds")
+
+        #generate_total_time = generate_image_descrptions(images_dir, api_key=st.session_state.user_openai_api_key)
         if type(generate_total_time) == list: #unsuccesful generate/did not finish
             st.error('Error occured while generating... press generate to try again.')
             st.error(generate_total_time[0])
@@ -96,7 +103,8 @@ def on_generate_button_submit(uploaded_images, generate=True):
 
 
 def retrieval_page():
-    st.text("Search for images submitted by API Key: {}".format(st.session_state.user_openai_api_key))
+    images_count = get_image_count(st.session_state.images_dir)
+    st.text("Search through {} images submitted by API Key: {}".format(images_count, st.session_state.user_openai_api_key))
     with st.form('prompt_submission'):
         text_input_col, submit_btn_col = st.columns([5, 1])
         with text_input_col:
@@ -190,7 +198,7 @@ if 'api_key_exists' not in st.session_state:
 if 'has_submitted_images' not in st.session_state:
     st.session_state.has_submitted_images = False
 
-if 'uploaded_images' not in st.session_state:
+if 'uploaded_images' not in st.session_state: #TODO: unused
     st.session_state.uploaded_images = []
 
 if 'history' not in st.session_state:

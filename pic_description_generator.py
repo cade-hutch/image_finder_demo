@@ -145,10 +145,7 @@ def rename_files_in_directory(directory_path):
                 print(f"Renamed '{filename}' to '{new_filename}'")
 
 
-def generate_image_descrptions(images_dir, api_key):
-    #TODO: needed?
-    client = openai.OpenAI(api_key=api_key)
-
+def get_new_pics_dir(images_dir):
     base_dir = os.path.dirname(os.path.dirname(images_dir))
     descriptions_folder_path = os.path.join(base_dir, 'json')
 
@@ -156,11 +153,20 @@ def generate_image_descrptions(images_dir, api_key):
     json_info_file_path = os.path.join(descriptions_folder_path, base_name + '_info.json')
     json_description_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
 
-    #TODO: get all images, not just new, to track progress if an error occurs during prior run
     new_pics = find_new_pic_files(images_dir, json_description_file_path)
+    return new_pics
 
-    start_time = time.perf_counter()
+
+def generate_image_descrptions(new_pics, images_dir, api_key):
+    base_dir = os.path.dirname(os.path.dirname(images_dir))
+    descriptions_folder_path = os.path.join(base_dir, 'json')
+    base_name = os.path.basename(images_dir)
+    json_info_file_path = os.path.join(descriptions_folder_path, base_name + '_info.json')
+    json_description_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
+    #client = openai.OpenAI(api_key=api_key) #TODO: which method is faster?
+
     for i, pic in enumerate(new_pics):
+      start_time = time.perf_counter()
       print('({}/{}) Getting description for {}'.format(i+1, len(new_pics), pic))
       img_path = os.path.join(images_dir, pic)
       reduce_png_quality(img_path, img_path)
@@ -175,18 +181,16 @@ def generate_image_descrptions(images_dir, api_key):
       append_to_json_file(json_info_file_path, response.json())
       try:
         response_description = response.json()["choices"][0]["message"]["content"]
+        description_obj = {
+          "file_name" : f"{pic}",
+          "description" : f"{response_description}"
+        }
+        append_to_json_file(json_description_file_path, description_obj)
+        end_time = time.perf_counter()
+        yield round(end_time - start_time, 2)
+
       except KeyError as e:
          print(f"KeyError occurred: {e}")
          print(response.json())
-         return [e]
-      description_obj = {
-          "file_name" : f"{pic}",
-          "description" : f"{response_description}"
-      }
-      append_to_json_file(json_description_file_path, description_obj)
-
-    end_time = time.perf_counter()
-    if new_pics:
-      return end_time - start_time
-    else:
-       return 0
+         yield 0
+         #return [e] yield this?

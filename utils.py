@@ -123,3 +123,12 @@ def validate_openai_api_key(openai_api_key):
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
+
+
+def get_image_count(images_dir):
+    #pngs only
+    images_count = 0
+    for file in os.listdir(images_dir):
+        if file.endswith('.png'):
+            images_count += 1
+    return images_count
