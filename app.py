@@ -3,8 +3,8 @@ import time
 import streamlit as st
 
 from image_retriever import retrieve_and_return
-from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir
-from utils import retrieve_or_generate, is_valid_image_directory, validate_openai_api_key, get_image_count
+from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, find_new_pic_files
+from utils import validate_openai_api_key, get_image_count
 
 
 def send_request(prompt):
@@ -63,7 +63,7 @@ def user_folder_exists(api_key):
     return False
 
 
-def on_generate_button_submit(uploaded_images, generate=True):
+def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True):
     curr_dir = os.path.dirname(os.path.realpath(__file__))
     image_base_dir = os.path.join(curr_dir, 'image_base')
     image_dir_name = create_image_dir_name(st.session_state.user_openai_api_key)
@@ -73,14 +73,14 @@ def on_generate_button_submit(uploaded_images, generate=True):
         os.makedirs(images_dir)
         print('image folder created')
     
-    for uploaded_img in uploaded_images:
-        file_path = os.path.join(images_dir, uploaded_img.name)
-        #write the uploaded file to the file system
-        with open(file_path, "wb") as f:
-            f.write(uploaded_img.getbuffer())
+    if from_uploaded:
+        for uploaded_img in uploaded_images:
+            file_path = os.path.join(images_dir, uploaded_img.name)
+            #write the uploaded file to the file system
+            with open(file_path, "wb") as f:
+                f.write(uploaded_img.getbuffer())
 
-        st.success(f"Saved file: {uploaded_img.name}")
-        
+            st.success(f"Saved file: {uploaded_img.name}")
 
     if generate:
         rename_files_in_directory(images_dir)
@@ -91,7 +91,6 @@ def on_generate_button_submit(uploaded_images, generate=True):
                 generate_total_time += generation_time
                 st.success(f"Description generated for {new_images[i]} in {generation_time} seconds")
 
-        #generate_total_time = generate_image_descrptions(images_dir, api_key=st.session_state.user_openai_api_key)
         if type(generate_total_time) == list: #unsuccesful generate/did not finish
             st.error('Error occured while generating... press generate to try again.')
             st.error(generate_total_time[0])
@@ -104,7 +103,12 @@ def on_generate_button_submit(uploaded_images, generate=True):
 
 def retrieval_page():
     images_count = get_image_count(st.session_state.images_dir)
+    submit_more_images_button = st.button(label='Submit more images here')
+    if submit_more_images_button:
+        print('more images to submit')
+
     st.text("Search through {} images submitted by API Key: {}".format(images_count, st.session_state.user_openai_api_key))
+
     with st.form('prompt_submission'):
         text_input_col, submit_btn_col = st.columns([5, 1])
         with text_input_col:
@@ -181,9 +185,23 @@ def main():
                     #retrieval_page()
     
     if st.session_state.has_submitted_images or st.session_state.api_key_exists:
-        if st.session_state.api_key_exists and st.session_state.show_existing_images_info:
+        if st.session_state.api_key_exists and st.session_state.display_infobar_for_existing_images:
+            #one time info bar: tell user there are existing picture the submitted
             st.info('Found Existing images for submitted API Key.')
-            st.session_state.show_existing_images_info = False
+            st.session_state.display_infobar_for_existing_images = False
+        if st.session_state.api_key_exists and not st.session_state.all_descriptions_generated:
+            #if a previous api key is submitted, check if images/descriptions are matching
+            pics_missing_descriptions = get_new_pics_dir(st.session_state.images_dir)
+            if pics_missing_descriptions:
+                print('images without descriptions found')
+                #need to generated new pics
+                continue_generating_button = st.button(label='Click here to continue generating for {} images'.format(len(pics_missing_descriptions)))
+                if continue_generating_button:
+                    print('display continue generating page')
+                    if on_generate_button_submit(pics_missing_descriptions, from_uploaded=False):
+                        st.session_state.all_descriptions_generated = True
+            else:
+                st.session_state.all_descriptions_generated = True
         retrieval_page()
 
 
@@ -207,7 +225,10 @@ if 'history' not in st.session_state:
 if 'images_dir' not in st.session_state:
     st.session_state.images_dir = ""
 
-if 'show_existing_images_info' not in st.session_state:
-    st.session_state.show_existing_images_info = True
+if 'all_descriptions_generated' not in st.session_state:
+    st.session_state.all_descriptions_generated = False
+
+if 'display_infobar_for_existing_images' not in st.session_state:
+    st.session_state.display_infobar_for_existing_images = True
 
 main()

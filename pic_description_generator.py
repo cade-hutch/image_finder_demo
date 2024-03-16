@@ -145,7 +145,7 @@ def rename_files_in_directory(directory_path):
                 print(f"Renamed '{filename}' to '{new_filename}'")
 
 
-def get_new_pics_dir(images_dir):
+def get_new_pics_dir(images_dir):#TODO: rename
     base_dir = os.path.dirname(os.path.dirname(images_dir))
     descriptions_folder_path = os.path.join(base_dir, 'json')
 
