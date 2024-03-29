@@ -132,3 +132,10 @@ def get_image_count(images_dir):
         if file.endswith('.png'):
             images_count += 1
     return images_count
+
+
+def get_descr_filepath(images_dir):
+    basename = os.path.basename(images_dir)
+    curr_dir = os.path.dirname(os.path.realpath(__file__))
+    descr_filepath = os.path.join(curr_dir, 'json', basename + '_descriptions.json')
+    return descr_filepath
