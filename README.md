@@ -1,7 +1,7 @@
 **Using python 3.11.5**
 
 STEP 1:  
-Go to [imagefinderdemo.streamlit.app](https://imagefinderdemo.streamlit.app/)
+Go to [imagefinderdemo2.streamlit.app](https://imagefinderdemo2.streamlit.app/)
 
 STEP 2:  
 Create and submit OpenAI api key

@@ -156,7 +156,7 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
         if new_images:
             for i, generation_time in enumerate(generate_image_descrptions(new_images, images_dir, st.session_state.user_openai_api_key)):
                 generate_total_time += generation_time
-                st.write(f"Description generated for {new_images[i]} in {generation_time} seconds")
+                st.write(f"({i+1}/{len(new_images)}) Finished generating for {new_images[i]} in {generation_time} seconds")
 
         if type(generate_total_time) == list: #unsuccesful generate/did not finish
             st.error('Error occured while generating... press generate to try again.')
