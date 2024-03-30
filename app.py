@@ -1,10 +1,47 @@
 import os
 import time
 import streamlit as st
+import subprocess
 
 from image_retriever import retrieve_and_return
 from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, find_new_pic_files
-from utils import validate_openai_api_key, get_image_count
+from utils import validate_openai_api_key, get_image_count, get_descr_filepath
+#TODO: state for importing so firebase only inits once??
+from firebase_utils import init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist, download_images
+
+MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
+JSON_DESCRITPIONS_DIR = os.path.join(MAIN_DIR, 'json')
+JSON_DESCR_SUFFIX = '_descriptions.json'
+IMAGE_BASE_DIR = os.path.join(MAIN_DIR, 'image_base')
+
+
+
+def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only once, rest of function checks completion to be ran repitative until processe complete
+    basename = create_image_dir_name(api_key)
+    json_descr_file = os.path.join(JSON_DESCRITPIONS_DIR, basename + JSON_DESCR_SUFFIX)
+    local_images_folder = os.path.join(IMAGE_BASE_DIR, basename)
+    print('SYNCING LOCAL WITH REMOTE')
+    process = subprocess.Popen(['python', 'firebase_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+
+    # Check if the subprocess ended without errors
+    if process.returncode == 0:
+        return True
+    else:
+        st.error("Script encountered an error.")
+        st.error(stderr.decode())  # Display the error message
+        return False
+    # blobs = download_descr_file(st.session_state.bucket, json_descr_file)
+    # if blobs:
+    #     print(blobs[0].name)
+    #     print('dowload_descr done')
+    #     # for blob in blobs:
+    #     #     print(blob.name)
+    #     return True
+    # else:
+    #     print('failed')
+    #     return False
+    #download_images(basename, local_images_folder)
 
 
 def send_request(prompt):
@@ -26,6 +63,9 @@ def send_request(prompt):
             base_dir = os.path.dirname(os.path.dirname(images_dir))
             descriptions_folder_path = os.path.join(base_dir, 'json')
             json_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
+            if not os.path.exists(json_file_path):
+                print('descriptions file not found, getting from firebase')
+                download_descr_file(json_file_path)
 
             start_t = time.perf_counter()
             output_image_names = retrieve_and_return(images_dir, json_file_path, prompt, st.session_state.user_openai_api_key)
@@ -52,18 +92,32 @@ def create_image_dir_name(api_key):
     return api_key[-5:]
 
 
-def user_folder_exists(api_key):
-    folder_name = api_key[-5:]
+def user_folder_exists_local(api_key):
+    folder_name = api_key[-5:]#create_image_dir_name
     curr_dir = os.path.dirname(os.path.realpath(__file__))
     image_base_dir = os.path.join(curr_dir, 'image_base')
     for f in os.listdir(image_base_dir):
         if f == folder_name:
             st.session_state.images_dir = os.path.join(image_base_dir, folder_name)
+            print('user_folder_exists_loca: True')
             return True
+    print('user_folder_exists_loca: False')
     return False
 
 
+def user_folder_exists_remote(api_key):
+    folder_name = api_key[-5:]
+    print('running user_folder_exists')
+    if does_image_folder_exist(folder_name):
+        print('exists_remote: True')
+        return True
+    else:
+        print('exists_remote: False')
+        return False
+
+
 def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True):
+    #TODO keep folder as temp?
     curr_dir = os.path.dirname(os.path.realpath(__file__))
     image_base_dir = os.path.join(curr_dir, 'image_base')
     image_dir_name = create_image_dir_name(st.session_state.user_openai_api_key)
@@ -74,22 +128,35 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
         print('image folder created')
     
     if from_uploaded:
+        uploads_to_firestore = []
         for uploaded_img in uploaded_images:
             file_path = os.path.join(images_dir, uploaded_img.name)
+            uploads_to_firestore.append(file_path)
             #write the uploaded file to the file system
             with open(file_path, "wb") as f:
                 f.write(uploaded_img.getbuffer())
 
-            st.success(f"Saved file: {uploaded_img.name}")
-
-    if generate:
+        #TODO: One succuess bar, add images while looping?
+        st.success(f"Images saved")
+        
         rename_files_in_directory(images_dir)
+        #FIREBASE - STORE IMAGES
+        if uploads_to_firestore:
+            print('uploading images to firebase')
+            upload_images_from_list(uploads_to_firestore)
+            print('finished uploading to firebase')
+
+    #NOTE: dev-only param
+    if generate:
+        if not from_uploaded:
+            #TODO: needed?
+            rename_files_in_directory(images_dir)
         new_images = get_new_pics_dir(images_dir)
         generate_total_time = 0.0
         if new_images:
             for i, generation_time in enumerate(generate_image_descrptions(new_images, images_dir, st.session_state.user_openai_api_key)):
                 generate_total_time += generation_time
-                st.success(f"Description generated for {new_images[i]} in {generation_time} seconds")
+                st.write(f"Description generated for {new_images[i]} in {generation_time} seconds")
 
         if type(generate_total_time) == list: #unsuccesful generate/did not finish
             st.error('Error occured while generating... press generate to try again.')
@@ -97,15 +164,21 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
         else:
             generate_total_time = format(generate_total_time, '.2f')
             st.success(f"Finished generating descriptions in {generate_total_time} seconds")
+            #FIREBASE - STORE JSON
+            print('starting json upload')
+            descr_filepath = get_descr_filepath(images_dir)
+            upload_json_descriptions_file(descr_filepath)
+            print('finished json upload')
 
     return True #TODO: handle good/bad return
 
 
 def retrieval_page():
     images_count = get_image_count(st.session_state.images_dir)
-    submit_more_images_button = st.button(label='Submit more images here')
+    submit_more_images_button = st.button(label='Submit More Images')
     if submit_more_images_button:
         print('more images to submit')
+        st.session_state.history = []
         st.session_state.show_retrieval_page = False
         st.session_state.upload_more_images = True
         return
@@ -122,13 +195,22 @@ def retrieval_page():
  
     if submit_button:
         send_request(user_input)
-
+    #NOTE: async works here
+    images_to_display = []
     for item_type, content in st.session_state.history:
         if item_type == 'text':
             st.text(content)
         elif item_type == 'image':
-            image_name = os.path.basename(content)
-            st.image(content, caption=image_name)
+            images_to_display.append(content)
+            #image_name = os.path.basename(content)
+            #st.image(content, caption=image_name)
+    for i in range(0, len(images_to_display), 2):
+        col1, col2 = st.columns(2)
+        col1.image(images_to_display[i], use_column_width=True)
+        
+        if i + 1 < len(images_to_display):
+            col2.image(images_to_display[i+1], use_column_width=True)  
+
 
 
 def main():
@@ -167,14 +249,21 @@ def main():
             if validate_openai_api_key(user_api_key_input):
                 st.session_state.user_openai_api_key = user_api_key_input
                 st.session_state.submitted_api_key = True
-                if user_folder_exists(user_api_key_input):
-                    st.session_state.api_key_exists = True
                 st.success('API key validated')
+                #remote_folder_exists = asyncio.run(user_folder_exists_remote(user_api_key_input))
+                remote_folder_exists = user_folder_exists_remote(user_api_key_input) #firestore folder exists
+                if user_folder_exists_local(user_api_key_input):
+                    st.session_state.api_key_exists = True
+                    #TODO: validate with remote?
+                elif remote_folder_exists:
+                    st.session_state.api_key_exists = True
+                    if sync_local_with_remote(user_api_key_input):
+                        print('passed syncing')
             else:
                 st.error('Error occured while validating API key.... refresh page to try again.')
 
     #Image upload page
-    #TODO: make own function?
+    #TODO: make own function? --> user has to click 'Submit More Images' twice for this to display
     if (st.session_state.submitted_api_key and not st.session_state.has_submitted_images and not st.session_state.api_key_exists) or st.session_state.upload_more_images:
         #TODO: button to skip upload for existing user/api_key
         if st.session_state.upload_more_images:
@@ -200,11 +289,13 @@ def main():
             st.session_state.display_infobar_for_existing_images = False
         if st.session_state.api_key_exists and not st.session_state.all_descriptions_generated:
             #if a previous api key is submitted, check if images/descriptions are matching
+            if not st.session_state.images_dir:
+                st.session_state.images_dir = os.path.join(IMAGE_BASE_DIR, create_image_dir_name(st.session_state.user_openai_api_key))
             pics_missing_descriptions = get_new_pics_dir(st.session_state.images_dir)
             if pics_missing_descriptions:
                 print('images without descriptions found')
                 #need to generated new pics
-                continue_generating_button = st.button(label='Click here to continue generating for {} images'.format(len(pics_missing_descriptions)))
+                continue_generating_button = st.button(label='Continue generating for {} images'.format(len(pics_missing_descriptions)))
                 if continue_generating_button:
                     print('display continue generating page')
                     if on_generate_button_submit(pics_missing_descriptions, from_uploaded=False):
@@ -216,6 +307,11 @@ def main():
 
 
 #app start point
+if 'firebase_init' not in st.session_state:
+    print('initing app')
+    st.session_state.firebase_init = True
+    init_app()
+
 if 'submitted_api_key' not in st.session_state:
     st.session_state.submitted_api_key = False
     #st.session_state.user_openai_api_key = ""?

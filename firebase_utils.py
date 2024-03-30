@@ -43,21 +43,8 @@ bucket = storage.bucket()
 
 def init_app(init_name='app'):
     print('init app dud')
-#     cred = credentials.Certificate(keyfile_path)
-#     print('initing app....')
-#     firebase_admin.initialize_app(cred, {'storageBucket': 'image-finder-demo.appspot.com'}, name=init_name)
-#     print('firebase initialized')
 
-#     db = firestore.client()
-#     bucket = storage.bucket()
 
-# blobs1 = bucket.list_blobs(prefix='json/')
-# for blob in blobs1:
-#     print(blob.name)
-
-#def upload_list_of_images(uploaded_images):
-# def get_bucket():
-#     return bucket
 def upload_images_from_list(image_paths):
     """
     store images from list of paths to folder in firebase
