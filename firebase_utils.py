@@ -25,9 +25,9 @@ else:
         "auth_uri": os.environ.get("FIREBASE_AUTH_URI"),
         "token_uri": os.environ.get("FIREBASE_TOKEN_URI"),
         "auth_provider_x509_cert_url": os.environ.get("FIREBASE_AUTH_PROVIDER_X509_CERT_URL"),
-        "client_x509_cert_url": os.environ.get("FIREBASE_CLIENT_X509_CERT_URL")
+        "client_x509_cert_url": os.environ.get("FIREBASE_CLIENT_X509_CERT_URL"),
+        "universe_domain": os.environ.get("FIREBASE_UNIVERSE_DOMAIN")
     }
-
 
 try:
     firebase_admin.get_app()
