@@ -5,14 +5,9 @@ import os
 import json
 import time
 
-from utils import reduce_png_quality
+from langchain_community.embeddings import OpenAIEmbeddings
 
-# if os.environ['IMAGE_FINDER_DEMO_KEY']:
-#     api_key = os.environ['IMAGE_FINDER_DEMO_KEY']
-# else:
-#     print("missing IMAGE_FINDER_DEMO_KEY environment variable")
-#     exit()
-
+from utils import reduce_png_quality, get_descriptions_from_json, create_and_store_embeddings_to_pickle, add_new_descr_to_embedding_pickle
 
 
 IMAGE_QUESTION = """The following is an image from an Apple iPhone camera roll. First, determine if the image is a screenshot or was taken from the camera. If the image is a screenshot, describes it's contents and determine what application is being displayed.
@@ -25,6 +20,7 @@ def headers(api_key):
   "Content-Type": "application/json",
   "Authorization": f"Bearer {api_key}"
   }
+
 
 def default_payload(image_question):
   return {
@@ -57,23 +53,20 @@ def encode_image(image_path):
 
 def append_to_json_file(file_path, data):
     try:
-        # Load existing data from the file
+        #load existing data from the file
         with open(file_path, 'r') as file:
             if os.path.getsize(file_path) != 0:
               existing_data = json.load(file)
             else:
                 existing_data = []
     except FileNotFoundError:
-        # If the file doesn't exist, create an empty list
         existing_data = []
 
-    # Append the new data to the existing data
     existing_data.append(data)
 
-    # Write the combined data back to the file
+    #write the combined data back to the file
     with open(file_path, 'w') as file:
         json.dump(existing_data, file, indent=2)
-    #print(f"Data appended to {file_path} successfully.")
 
 
 def get_file_names_from_json(json_file_path):
@@ -187,10 +180,37 @@ def generate_image_descrptions(new_pics, images_dir, api_key):
         }
         append_to_json_file(json_description_file_path, description_obj)
         end_time = time.perf_counter()
-        yield round(end_time - start_time, 2)
+        yield (response_description, round(end_time - start_time, 2))
 
       except KeyError as e:
          print(f"KeyError occurred: {e}")
          print(response.json())
          yield 0
          #return [e] yield this?
+
+
+def update_embeddings(api_key, embeddings_pickle_file, new_descriptions):
+    print('updating embeddings')
+    embeddings_obj = OpenAIEmbeddings(api_key=api_key)
+    add_new_descr_to_embedding_pickle(embeddings_obj, embeddings_pickle_file, new_descriptions)
+    
+
+def create_embeddings(api_key, embeddings_pickle_file, json_description_file_path):
+    print('creating embeddings')
+    embeddings_obj = OpenAIEmbeddings(api_key=api_key)
+    descriptions = get_descriptions_from_json(json_description_file_path)
+    create_and_store_embeddings_to_pickle(embeddings_obj, embeddings_pickle_file, descriptions)
+
+
+def handle_embeddings(api_key, base_name, new_descriptions, json_description_file_path):
+    start_time_pickle = time.perf_counter()
+    embeddings_obj = OpenAIEmbeddings(api_key=api_key)
+    embedding_pickles_folder_path = os.path.join(os.path.dirname(os.path.dirname(json_description_file_path)), 'embeddings')
+    pickle_file = os.path.join(embedding_pickles_folder_path, base_name + '.pkl')
+    if os.path.exists(pickle_file):
+        add_new_descr_to_embedding_pickle(embeddings_obj, pickle_file, new_descriptions)
+    else:
+        descriptions = get_descriptions_from_json(json_description_file_path)
+        create_and_store_embeddings_to_pickle(embeddings_obj, pickle_file, descriptions)
+    end_time_pickle = time.perf_counter()
+    print(f"finished creating/adding embeddings in {round(end_time_pickle - start_time_pickle, 2)}")

@@ -1,8 +1,13 @@
 import os
 import json
+import pickle
+import faiss
+import numpy as np
 
 from PIL import Image
 from openai import OpenAI
+from langchain_community.embeddings import OpenAIEmbeddings
+
 
 _10_MB = 10*1024*1024
 
@@ -51,6 +56,31 @@ def descriptions_file_up_to_date(images_dir, json_file_path):
     return sorted(json_file_names) == sorted(png_names)
 
 
+def get_descriptions_from_json(json_description_file_path, get_images=False):
+    try:
+        with open(json_description_file_path, 'r') as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        data = []
+
+    descriptions = []
+    image_names = []
+    if get_images:
+        for element in data:
+            descriptions.append(element['description'])
+            image_names.append(element['file_name'])
+
+        return image_names, descriptions
+    else:
+        for element in data:
+            descriptions.append(element['description'])
+        return descriptions
+
+
+def get_new_descriptions(new_images, json_description_file_path):
+    pass
+
+
 def retrieve_or_generate(images_dir, json_file_path):
     if not os.path.exists(json_file_path):
         return 'generate'
@@ -73,13 +103,13 @@ def reduce_png_quality(file_path, output_path, quality_level=50, max_size=_10_MB
     first attempt with Image.save(), then use Image.resize()
     """
     file_size = os.path.getsize(file_path)
-    print("file size: {}".format(file_size))
+    #print("file size: {}".format(file_size))
 
     if file_size < max_size:
         return
 
     with Image.open(file_path) as img:
-        # Optionally, resize the image here if you want
+        # resize the image here if you want
         # img = img.resize((new_width, new_height))
 
         # Convert to P mode which is more efficient for PNGs
@@ -139,3 +169,119 @@ def get_descr_filepath(images_dir):
     curr_dir = os.path.dirname(os.path.realpath(__file__))
     descr_filepath = os.path.join(curr_dir, 'json', basename + '_descriptions.json')
     return descr_filepath
+
+
+def remove_description_pretense(description):
+    """
+    outliers:
+    The image is a photograph taken from a camera, possibly with an iPhone considering the initial context provided.
+    The image depicts a close-up photo of
+    The image is a portrait-oriented photo taken from a camera, showing a
+    The image is taken from a camera and shows a
+    """
+    ss_prefix = ''
+    if description.startswith("This is NOT a screenshot.\n\n"):
+        ss_prefix = "This is NOT a screenshot.\n\n"
+        description = description.split(ss_prefix)[1]
+    elif description.startswith("This is a screenshot.\n\n"):
+        ss_prefix = 'This is a screenshot.\n\n'
+        description = description.split(ss_prefix)[1]
+
+    if len(description) < 5:
+        return description
+    
+    words = description.split()
+    if words[1] == 'image' or words[1] == 'photo':
+        third_words = ['shows', 'depicts', 'is', 'displays', 'features']
+        if words[2] in third_words:
+            words = words[3:]
+            if words[0] == 'of':
+                words = words[1:]
+        elif words[2] == 'appears':
+            words = words[5:]
+        elif words[2] == 'provided' and words[3] == 'appears':
+            words = words[6:]
+    elif 'image' in words[2]:
+        words = words[3:]
+    elif words[3] == 'image' and words[4] == 'of':
+        words = words[5:]
+    elif words[3] == 'photo' and words[4] == 'of':
+        words = words[5:]
+
+    if words[0][0].isalpha():
+        words[0] = words[0][0].upper() + words[0][1:]
+
+    #TODO: inefficient to split whole description into list --> only need first
+    new_description = ss_prefix + ' '.join(words)
+    return new_description
+
+
+def remove_description_pretenses_in_file(descr_file):
+    pass
+
+#embeddings utils
+def add_new_descr_to_embedding_pickle(embeddings_obj, pickle_file, descriptions):
+    #one or multiple descr
+    #NOTE: np array additions must have same amount of columns(1536)
+    with open(pickle_file, 'rb') as file:
+        existing_embeddings = pickle.load(file)
+    print(len(existing_embeddings))
+    if type(descriptions) == str:
+        descriptions = [descriptions]
+    new_rows = []
+    for descr in descriptions:
+        new_row = create_single_embedding(embeddings_obj, descr)
+        new_rows.append(new_row)
+
+    new_rows = np.array(new_rows).astype('float32')
+    new_embeddings = np.vstack((existing_embeddings, new_rows))
+
+    with open(pickle_file, 'wb') as file:
+        pickle.dump(new_embeddings, file)
+
+
+def create_single_embedding(embeddings_obj, description):
+    return embeddings_obj.embed_query(description)
+
+
+def create_and_store_embeddings_to_pickle(embeddings_obj, pickle_file, descriptions):
+    """
+    embeddings list(np.array(np.array)) - list of descriptions that are converted to embeddings np.arrays
+    """
+    embeddings_list = []
+    for descr in descriptions:
+        embeddings_list.append(embeddings_obj.embed_query(descr))
+
+    embeddings_list = np.array(embeddings_list).astype('float32')
+
+    with open(pickle_file, 'wb') as file:
+        pickle.dump(embeddings_list, file)
+
+
+def get_embeddings_from_pickle_file(pickle_file):
+    with open(pickle_file, 'rb') as file:
+        embeddings_list = pickle.load(file)
+    return embeddings_list
+
+
+def query_for_related_descriptions(api_key, query, embeddings_pickle_file, images_dir, k=10):
+    json_descr_filepath = get_descr_filepath(images_dir)
+    file_names, descriptions = get_descriptions_from_json(json_descr_filepath, get_images=True)
+    if k == 0:
+        k = len(file_names)
+
+    embeddings_obj = OpenAIEmbeddings(api_key=api_key)
+    embeddings_list = get_embeddings_from_pickle_file(embeddings_pickle_file)
+    index = faiss.IndexFlatL2(1536)
+    index.add(embeddings_list)
+
+    query_embedding = embeddings_obj.embed_query(query)
+    query_embedding = np.array([query_embedding]).astype('float32')
+
+    distances, indices = index.search(query_embedding, k)
+
+    images_ranked = np.array(file_names)[indices]
+    search_ouput = np.array(descriptions)[indices]
+    print(search_ouput)
+    print(images_ranked)
+    return images_ranked
