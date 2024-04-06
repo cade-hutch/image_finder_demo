@@ -10,10 +10,12 @@ from langchain_community.embeddings import OpenAIEmbeddings
 from utils import reduce_png_quality, get_descriptions_from_json, create_and_store_embeddings_to_pickle, add_new_descr_to_embedding_pickle
 
 
-IMAGE_QUESTION = """The following is an image from an Apple iPhone camera roll. First, determine if the image is a screenshot or was taken from the camera. If the image is a screenshot, describes it's contents and determine what application is being displayed.
-If the image is taken from a camera, describe all of it's contents and include elements (if appplicable) such as the main subject, what is in the foreground and background, and the location of the image.
-The first sentence of your output should be either "This is a screenshot." or "This is NOT a screenshot." Then, provide the rest of your answer.
-"""
+# IMAGE_QUESTION = """The following is an image from an Apple iPhone camera roll. First, determine if the image is a screenshot or was taken from the camera. If the image is a screenshot, describes it's contents and determine what application is being displayed.
+# If the image is taken from a camera, describe all of it's contents and include elements (if appplicable) such as the main subject, what is in the foreground and background, and the location of the image.
+# The first sentence of your output should be either "This is a screenshot." or "This is NOT a screenshot." Then, provide the rest of your answer.
+# """
+
+IMAGE_QUESTION = 'As descriptive as possible, describe the contents of this image in a single sentence.'
 
 def headers(api_key):
   return {
@@ -169,7 +171,7 @@ def generate_image_descrptions(new_pics, images_dir, api_key):
       payload['messages'][0]['content'][1]['image_url']['url'] = f"data:image/jpeg;base64,{base64_image}"
       response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers(api_key), json=payload)
       stop_time_req = time.perf_counter()
-      request_time = stop_time_req - start_time_req
+      request_time = round(stop_time_req - start_time_req, 2)
       print('response recieved for {} in {} seconds'.format(pic, request_time))
       append_to_json_file(json_info_file_path, response.json())
       try:

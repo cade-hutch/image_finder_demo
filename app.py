@@ -154,7 +154,8 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
         new_images = get_new_pics_dir(images_dir)
         generate_total_time = 0.0
         if new_images:
-            for i, generation_time in enumerate(generate_image_descrptions(new_images, images_dir, st.session_state.user_openai_api_key)):
+            for i, callback_tuple in enumerate(generate_image_descrptions(new_images, images_dir, st.session_state.user_openai_api_key)):
+                generation_time = callback_tuple[1]
                 generate_total_time += generation_time
                 st.write(f"({i+1}/{len(new_images)}) Finished generating for {new_images[i]} in {generation_time} seconds")
 

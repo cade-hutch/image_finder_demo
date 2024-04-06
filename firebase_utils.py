@@ -57,10 +57,11 @@ def upload_images_from_list(image_paths):
             t_start = time.perf_counter()
             blob = bucket.blob(os.path.join('images', folder_name, image_name))
             t_end1 = time.perf_counter()
-            print('finished bucket.blob in {}s'.format(t_end1 - t_start))
+            print('finished bucket.blob in {}s'.format(round(t_end1 - t_start, 2)))
             blob.upload_from_filename(image_pathname)
             t_end = time.perf_counter()
-            print('finished pic upload in {}s'.format(t_end - t_start))
+            print('finished {} upload in {}s'.format(image_name, round(t_end - t_start, 2)))
+
 
 
 def upload_images_from_dir(folder_path):
@@ -74,10 +75,10 @@ def upload_images_from_dir(folder_path):
             t_start = time.perf_counter()
             blob = bucket.blob(os.path.join('images', folder_name, filename))
             t_end1 = time.perf_counter()
-            print('finished bucket.blob in {}s'.format(t_end1 - t_start))
+            print('finished bucket.blob in {}s'.format(round(t_end1 - t_start, 2)))
             blob.upload_from_filename(os.path.join(folder_path, filename))
             t_end = time.perf_counter()
-            print('finished pic upload in {}s'.format(t_end - t_start))
+            print('finished {} upload in {}s'.format(filename, round(t_end - t_start, 2)))
             #TODO: needed??
             if False:
                 pass
