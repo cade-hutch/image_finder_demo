@@ -28,24 +28,12 @@ def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only 
     if process.returncode == 0:
         return True
     else:
-        st.error("Script encountered an error.")
+        st.error("sync_local_with_remote: erro during db sync subprocess")
         st.error(stderr.decode())  # Display the error message
         return False
-    # blobs = download_descr_file(st.session_state.bucket, json_descr_file)
-    # if blobs:
-    #     print(blobs[0].name)
-    #     print('dowload_descr done')
-    #     # for blob in blobs:
-    #     #     print(blob.name)
-    #     return True
-    # else:
-    #     print('failed')
-    #     return False
-    #download_images(basename, local_images_folder)
 
 
 def send_request(prompt):
-    # Your function to send and receive data from an API
     print('-----')
     print('SEND REQUEST CALLED')
     print(f"SENDING REQUEST: {prompt}")
@@ -53,7 +41,6 @@ def send_request(prompt):
 
     if prompt:
         st.session_state.history = []
-        # Append user query to history
         #TODO: make retriee function return that modified phrase, return that to be displayed
         st.session_state.history.append(('text', f"You: {prompt}"))
         
@@ -88,20 +75,17 @@ def send_request(prompt):
 
 
 def create_image_dir_name(api_key):
-    #TODO: check exists?
     return api_key[-5:]
 
 
 def user_folder_exists_local(api_key):
-    folder_name = api_key[-5:]#create_image_dir_name
+    folder_name = create_image_dir_name(api_key)
     curr_dir = os.path.dirname(os.path.realpath(__file__))
     image_base_dir = os.path.join(curr_dir, 'image_base')
     for f in os.listdir(image_base_dir):
         if f == folder_name:
             st.session_state.images_dir = os.path.join(image_base_dir, folder_name)
-            print('user_folder_exists_loca: True')
             return True
-    print('user_folder_exists_loca: False')
     return False
 
 
@@ -171,6 +155,7 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
             upload_json_descriptions_file(descr_filepath)
             print('finished json upload')
 
+    st.session_state.all_descriptions_generated =True
     return True #TODO: handle good/bad return
 
 
@@ -182,37 +167,61 @@ def retrieval_page():
         st.session_state.history = []
         st.session_state.show_retrieval_page = False
         st.session_state.upload_more_images = True
-        return
+        st.session_state.display_uploader_page = True
 
-    st.text("Search through {} images submitted by API Key: {}".format(images_count, st.session_state.user_openai_api_key))
+    if st.session_state.show_retrieval_page:
+        st.text("Search through {} images submitted by API Key: {}".format(images_count, st.session_state.user_openai_api_key))
 
-    with st.form('prompt_submission'):
-        text_input_col, submit_btn_col = st.columns([5, 1])
-        with text_input_col:
-            user_input = st.text_input(label="why is this required", label_visibility='collapsed', key="user_input", placeholder="What would you like to find?")
+        with st.form('prompt_submission'):
+            text_input_col, submit_btn_col = st.columns([5, 1])
+            with text_input_col:
+                user_input = st.text_input(label="why is this required", label_visibility='collapsed', key="user_input", placeholder="What would you like to find?")
 
-        with submit_btn_col:
-            submit_button = st.form_submit_button(label='Send')
- 
-    if submit_button:
-        send_request(user_input)
-    #NOTE: async works here
-    images_to_display = []
-    for item_type, content in st.session_state.history:
-        if item_type == 'text':
-            st.text(content)
-        elif item_type == 'image':
-            images_to_display.append(content)
-            #image_name = os.path.basename(content)
-            #st.image(content, caption=image_name)
-    for i in range(0, len(images_to_display), 2):
-        col1, col2 = st.columns(2)
-        col1.image(images_to_display[i], use_column_width=True)
+            with submit_btn_col:
+                submit_button = st.form_submit_button(label='Send')
+    
+        if submit_button:
+            send_request(user_input)
+        #NOTE: async works here
+        images_to_display = []
+        for item_type, content in st.session_state.history:
+            if item_type == 'text':
+                st.text(content)
+            elif item_type == 'image':
+                images_to_display.append(content)
+                #image_name = os.path.basename(content)
+                #st.image(content, caption=image_name)
+        for i in range(0, len(images_to_display), 2):
+            col1, col2 = st.columns(2)
+            col1.image(images_to_display[i], use_column_width=True)
+            
+            if i + 1 < len(images_to_display):
+                col2.image(images_to_display[i+1], use_column_width=True)  
+
+
+def image_upload_page():
+    #TODO: button to skip upload for existing user/api_key
+    if st.session_state.upload_more_images:
+        st.write(f"Submit more images for {st.session_state.user_openai_api_key}")
+    else:
+        st.write('Submit images for description generation')
+
+    uploaded_files = st.file_uploader("Choose images...", type=['png'], accept_multiple_files=True)
+
+    if uploaded_files:
+        generate_submission_page(uploaded_files)
         
-        if i + 1 < len(images_to_display):
-            col2.image(images_to_display[i+1], use_column_width=True)  
 
-
+def generate_submission_page(uploaded_files):
+    generate_submit_button = st.button(label=f"Click here to generate descriptions for {len(uploaded_files)} images")
+    if generate_submit_button:
+        st.session_state.show_retrieval_page = True
+        st.session_state.display_uploader_page = False
+        if on_generate_button_submit(uploaded_files):
+            st.session_state.upload_more_images = False
+            st.session_state.has_submitted_images = True
+            retrieval_page()
+            
 
 def main():
     st.title('Image Finder')
@@ -265,23 +274,11 @@ def main():
 
     #Image upload page
     #TODO: make own function? --> user has to click 'Submit More Images' twice for this to display
-    if (st.session_state.submitted_api_key and not st.session_state.has_submitted_images and not st.session_state.api_key_exists) or st.session_state.upload_more_images:
-        #TODO: button to skip upload for existing user/api_key
-        if st.session_state.upload_more_images:
-            st.write(f"Submit more images for {st.session_state.user_openai_api_key}")
-        else:
-            st.write('Submit images for description generation')
-
-        uploaded_files = st.file_uploader("Choose images...", type=['png'], accept_multiple_files=True)
-
-        if uploaded_files:
-            generate_submit_button = st.button(label=f"Click here to generate descriptions for {len(uploaded_files)} images")
-            if generate_submit_button:
-                if on_generate_button_submit(uploaded_files):
-                    st.session_state.upload_more_images = False
-                    st.session_state.has_submitted_images = True
-                    st.session_state.show_retrieval_page = True
-                    #retrieval_page()
+    #if (st.session_state.submitted_api_key and not st.session_state.has_submitted_images and not st.session_state.api_key_exists) or st.session_state.upload_more_images:
+    if (st.session_state.submitted_api_key and not st.session_state.has_submitted_images and not st.session_state.api_key_exists):
+        st.session_state.display_uploader_page = True
+        #image_upload_page()
+        
     
     if st.session_state.has_submitted_images or st.session_state.api_key_exists:
         if st.session_state.api_key_exists and st.session_state.display_infobar_for_existing_images:
@@ -303,16 +300,15 @@ def main():
                         st.session_state.all_descriptions_generated = True
             else:
                 st.session_state.all_descriptions_generated = True
-        if st.session_state.show_retrieval_page:
+        #if st.session_state.show_retrieval_page:
+        if st.session_state.all_descriptions_generated:
             retrieval_page()
 
+    if st.session_state.display_uploader_page:
+        image_upload_page()
 
-#app start point
-if 'firebase_init' not in st.session_state:
-    print('initing app')
-    st.session_state.firebase_init = True
-    init_app()
 
+#APP START POINT
 if 'submitted_api_key' not in st.session_state:
     st.session_state.submitted_api_key = False
     #st.session_state.user_openai_api_key = ""?
@@ -323,11 +319,11 @@ if 'api_key_exists' not in st.session_state:
 if 'has_submitted_images' not in st.session_state:
     st.session_state.has_submitted_images = False
 
-if 'uploaded_images' not in st.session_state: #TODO: unused
-    st.session_state.uploaded_images = []
-
-if 'upload_more_images' not in st.session_state: #TODO: unused
+if 'upload_more_images' not in st.session_state: #TODO: correct state?
     st.session_state.upload_more_images = False
+
+if 'display_uploader_page' not in st.session_state:
+    st.session_state.display_uploader_page = False
 
 if 'history' not in st.session_state:
     st.session_state.history = []

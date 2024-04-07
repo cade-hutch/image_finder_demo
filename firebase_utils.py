@@ -57,7 +57,7 @@ def upload_images_from_list(image_paths):
             t_start = time.perf_counter()
             blob = bucket.blob(os.path.join('images', folder_name, image_name))
             t_end1 = time.perf_counter()
-            print('finished bucket.blob in {}s'.format(round(t_end1 - t_start, 2)))
+            print('finished db connection in {}s'.format(round(t_end1 - t_start, 2)))
             blob.upload_from_filename(image_pathname)
             t_end = time.perf_counter()
             print('finished {} upload in {}s'.format(image_name, round(t_end - t_start, 2)))
@@ -75,7 +75,7 @@ def upload_images_from_dir(folder_path):
             t_start = time.perf_counter()
             blob = bucket.blob(os.path.join('images', folder_name, filename))
             t_end1 = time.perf_counter()
-            print('finished bucket.blob in {}s'.format(round(t_end1 - t_start, 2)))
+            print('finished db connection in {}s'.format(round(t_end1 - t_start, 2)))
             blob.upload_from_filename(os.path.join(folder_path, filename))
             t_end = time.perf_counter()
             print('finished {} upload in {}s'.format(filename, round(t_end - t_start, 2)))
@@ -232,31 +232,13 @@ def fetch_images_as_bytes(blobs):
 
 
 if __name__ == "__main__":
-    #test_img_folder = '/Users/cadeh/Desktop/MyCode/Workspace/image_finder_demo/image_base/app_user3_download'
-    #test_img_folder = '/Users/cadeh/Desktop/MyCode/Workspace/image_finder_demo/image_base/lAdqD'
-    #test_json_file = '/Users/cadeh/Desktop/MyCode/Workspace/image_finder_demo/json/app_user5_descriptions.json'
-    #fetched_image_folder = '/Users/cadeh/Desktop/MyCode/Workspace/image_finder_demo/image_base/fetched_images'
-    #ldf = '/Users/cadeh/Desktop/MyCode/Workspace/image_finder_demo/json/51v4i_descriptions.json'3kxEx
     descr_file = sys.argv[1]
     image_folder = sys.argv[2]
     remote_image_folder_name = image_folder[-5:]
+
     t_start = time.perf_counter()
-    #init_app(init_name='main_func')
     download_descr_file(descr_file)
     download_images(remote_image_folder_name, image_folder)
-
-
-    #bs = list_files_in_folder('images/app_user3')
-    #download_images(bs, test_img_folder)
-    #upload_images_from_dir(test_img_folder)
-    #res = does_descriptions_file_exist('ap_user5_descriptions')
-    #res = list_files_in_folder('json', search_pngs=False)
-    #print(res)
-    #download_images(blobs, fetched_image_folder)
-    #upload_images_from_dir(test_img_folder)
-    #upload_json_descriptions_file(test_json_file)
-    #file_url = get_file_url('json/app_user5_descriptions.json')
-    #json_data = fetch_image_descriptions(file_url)
-    #print(json_data)
     t_end = time.perf_counter()
+
     print('finished in {}s'.format(t_end - t_start))

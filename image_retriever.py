@@ -81,22 +81,19 @@ def handle_faulty_response_format(res):
 def rephrase_prompt(api_key, orig_prompt):
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
-    model="gpt-4-1106-preview",
-    messages=[
-        {"role": "system", "content": """You are an assistant for rephrasing image search prompts. You need to convert queries for images that are in form of statements into equivalent questions.
-                                        
-                                        #RULES:
-                                        - Your output should only be the converted prompt, nothing extra.
-                                        - If the input is already in question form, improve it to be better suited for a search query.
-                                        - Try to remove possessive pronouns and replace with generic determiners.
-                                        #EXAMPLES:
-                                        - If the input is "animals", your output should be "What images contain animals?".
-                                        - If the input is "My family on Christmas", your output should be "What images contain a family on Christmas?".
-                                        - If the input is "Graduation pics", your output should be "What images are related to graduation?".
-
-                                    """},
-        {"role": "user", "content": "Based on the given rules and examples, please rephrase the following: {}".format(orig_prompt)},
-    ]
+        model="gpt-4-1106-preview",
+        messages=[
+            {"role": "system", "content": ("You are an assistant for rephrasing image search prompts. You need to convert queries for images that are in form of statements into equivalent questions.\n"
+                                            "#RULES:\n"
+                                            "- Your output should only be the converted prompt, nothing extra.\n"
+                                            "- If the input is already in question form, improve it to be better suited for a search query.\n"
+                                            "- Try to remove possessive pronouns and replace with generic determiners.\n"
+                                            "#EXAMPLES:\n"
+                                            "- If the input is 'animals', your output should be 'What images contain animals?'.\n"
+                                            "- If the input is 'My family on Christmas', your output should be 'What images contain a family on Christmas?'.\n"
+                                            "- If the input is 'Graduation pics', your output should be 'What images are related to graduation?'.\n")},
+            {"role": "user", "content": "Based on the given rules and examples, please rephrase the following: {}".format(orig_prompt)},
+        ]
     )
     new_prompt = response.choices[0].message.content
     return new_prompt
@@ -110,18 +107,18 @@ def retrieve_and_open(images_dir, image_descriptions_file, retrieval_prompt, api
         retrieval_prompt = rephrase_prompt(api_key, retrieval_prompt)
         print(f"Prompt rephrased to: {retrieval_prompt}")
     response = client.chat.completions.create(
-    model="gpt-4-1106-preview",
-    messages=[
-        {"role": "system", "content": """You are an assistant for finding image file names based on the associated image descriptions given for each photo.
-                                        Here are image file names and corresponding image descriptions in JSON format: {}
+        model="gpt-4-1106-preview",
+        messages=[
+            {"role": "system", "content": """You are an assistant for finding image file names based on the associated image descriptions given for each photo.
+                                            Here are image file names and corresponding image descriptions in JSON format: {}
 
-                                        The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo.
+                                            The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo.
 
-                                        For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description.
-                                        Provide your answer as a list of strings. Simply provide the desired out list, do not include additional explaination.
-                                    """.format(image_descriptions)},
-        {"role": "user", "content": f"{retrieval_prompt}"},
-    ]
+                                            For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description.
+                                            Provide your answer as a list of strings. Simply provide the desired out list, do not include additional explaination.
+                                        """.format(image_descriptions)},
+            {"role": "user", "content": f"{retrieval_prompt}"},
+        ]
     )
     res = response.choices[0].message.content
     # Replace single quotes with double quotes
@@ -194,16 +191,16 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
         retrieval_prompt = rephrase_prompt(api_key, retrieval_prompt)
         print(f"Prompt rephrased to: {retrieval_prompt}")
     response = client.chat.completions.create(
-    model="gpt-4-1106-preview",
-    messages=[
-        {"role": "system", "content": (f"You are an assistant for finding image file names based on the associated image descriptions given for each photo."
-                                        f"Here are image file names and corresponding image descriptions in JSON format: {image_descriptions}"
-                                        "The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo."
-                                        "For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description."
-                                        "Provide your answer as a list of strings. Simply provide the desired output list, do not include additional explanation.")},
-        {"role": "user", "content": f"{retrieval_prompt}"},
-    ])
-
+        model="gpt-4-1106-preview",
+        messages=[
+            {"role": "system", "content": (f"You are an assistant for finding image file names based on the associated image descriptions given for each photo."
+                                            f"Here are image file names and corresponding image descriptions in JSON format: {image_descriptions}"
+                                            "The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo."
+                                            "For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description."
+                                            "Provide your answer as a list of strings. Simply provide the desired output list, do not include additional explanation. If there are no valid answer, simply output 'None'.")},
+            {"role": "user", "content": f"{retrieval_prompt}"},
+        ]
+    )
     res = response.choices[0].message.content
     # Replace single quotes with double quotes
     res = res.replace("'", "\"")

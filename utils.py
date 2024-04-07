@@ -57,6 +57,7 @@ def descriptions_file_up_to_date(images_dir, json_file_path):
 
 
 def get_descriptions_from_json(json_description_file_path, get_images=False):
+    #return str list(s)
     try:
         with open(json_description_file_path, 'r') as file:
             data = json.load(file)
@@ -75,6 +76,20 @@ def get_descriptions_from_json(json_description_file_path, get_images=False):
         for element in data:
             descriptions.append(element['description'])
         return descriptions
+
+
+def retrieve_contents_from_json(json_file_path):
+    #return list of dicts(keys = filename, descr)
+    try:
+        with open(json_file_path, 'r') as file:
+            data = json.load(file)
+            return data
+    except FileNotFoundError:
+        print(f"File not found: {json_file_path}")
+        return None
+    except json.JSONDecodeError:
+        print(f"Error decoding JSON file: {json_file_path}")
+        return None
 
 
 def get_new_descriptions(new_images, json_description_file_path):
@@ -190,9 +205,23 @@ def remove_description_pretense(description):
     if len(description) < 5:
         return description
     
+    if 'from a camera' in description.lower():
+        split1, split2 = description.split('from a camera')
+        if len(split1) < 100: #TODO: not great
+            description = split2
+            if description.startswith('. ') or description.startswith(', '):
+                description = description[2:]
+            if description.startswith(' and shows '):
+                description = description.replace(" and shows", "", 1).lstrip()
+            elif description.startswith(' showing '):
+                description = description.replace(" showing", "", 1).lstrip()
+            return ss_prefix + description
+
+        
+
     words = description.split()
     if words[1] == 'image' or words[1] == 'photo':
-        third_words = ['shows', 'depicts', 'is', 'displays', 'features']
+        third_words = ['shows', 'depicts', 'is', 'displays', 'features', 'captures', 'presents']
         if words[2] in third_words:
             words = words[3:]
             if words[0] == 'of':
@@ -216,8 +245,15 @@ def remove_description_pretense(description):
     return new_description
 
 
-def remove_description_pretenses_in_file(descr_file):
-    pass
+def remove_description_pretenses_in_file(descr_file, output_file):
+    descriptions_json = retrieve_contents_from_json(descr_file)
+    for i, d in enumerate(descriptions_json):
+        new_descr = remove_description_pretense(d['description'])
+        descriptions_json[i]['description'] = new_descr
+
+    with open(output_file, 'w') as file:
+        json.dump(descriptions_json, file, indent=2)
+
 
 #embeddings utils
 def add_new_descr_to_embedding_pickle(embeddings_obj, pickle_file, descriptions):

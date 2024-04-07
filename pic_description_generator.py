@@ -7,7 +7,7 @@ import time
 
 from langchain_community.embeddings import OpenAIEmbeddings
 
-from utils import reduce_png_quality, get_descriptions_from_json, create_and_store_embeddings_to_pickle, add_new_descr_to_embedding_pickle
+from utils import reduce_png_quality, get_descriptions_from_json, create_and_store_embeddings_to_pickle, add_new_descr_to_embedding_pickle, remove_description_pretense
 
 
 # IMAGE_QUESTION = """The following is an image from an Apple iPhone camera roll. First, determine if the image is a screenshot or was taken from the camera. If the image is a screenshot, describes it's contents and determine what application is being displayed.
@@ -176,6 +176,7 @@ def generate_image_descrptions(new_pics, images_dir, api_key):
       append_to_json_file(json_info_file_path, response.json())
       try:
         response_description = response.json()["choices"][0]["message"]["content"]
+        response_description = remove_description_pretense(response_description)
         description_obj = {
           "file_name" : f"{pic}",
           "description" : f"{response_description}"
