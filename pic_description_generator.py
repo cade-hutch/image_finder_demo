@@ -77,9 +77,11 @@ def get_file_names_from_json(json_file_path):
             data = json.load(file)
 
             # Check if the data is a dictionary or a list of dictionaries
+            print(type(data))
             if isinstance(data, dict):
                 # If it's a dictionary, search for "file_name" keys
-                return [data.get("file_name", None)]
+                #return [data.get("file_name", None)]
+                return data.keys()
             elif isinstance(data, list):
                 # If it's a list, search for "file_name" keys in each dictionary
                 return [item.get("file_name", None) for item in data]

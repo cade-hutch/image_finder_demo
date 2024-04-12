@@ -167,7 +167,7 @@ def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, 
     model="gpt-4-1106-preview",
     messages=[
         {"role": "system", "content": """You are an assistant for finding image file names based on the associated image descriptions given for each photo.
-                                        Here are image file names and corresponding image descriptions in JSON format: {}
+                                        Here are image filenames as keys and corresponding image descriptions as values in JSON format: {}
 
                                         The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo.
 
@@ -194,7 +194,7 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
         model="gpt-4-1106-preview",
         messages=[
             {"role": "system", "content": (f"You are an assistant for finding image file names based on the associated image descriptions given for each photo."
-                                            f"Here are image file names and corresponding image descriptions in JSON format: {image_descriptions}"
+                                            f"Here are image filenames as keys and corresponding image descriptions as values in JSON format: {image_descriptions}"
                                             "The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo."
                                             "For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description."
                                             "Provide your answer as a list of strings. Simply provide the desired output list, do not include additional explanation. If there are no valid answer, simply output 'None'.")},
