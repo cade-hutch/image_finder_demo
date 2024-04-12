@@ -209,6 +209,7 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
     
     output_images = []
     try:
+        print(res)
         output_images = ast.literal_eval(res)
     except ValueError:
         print("ValueError: The input is not a valid Python literal.")
@@ -226,6 +227,10 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
                     output_images.append(s)
 
     print(f"Got response in {round(req_stop_time - req_start_time, 2)} seconds")
+    if type(output_images) == str:
+        print('got output as string instead of list')
+        output_images = [output_images]
     print(f"{len(output_images)} images")
+
     print(output_images)
     return output_images
