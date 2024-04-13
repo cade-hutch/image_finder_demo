@@ -4,6 +4,7 @@ import pickle
 import faiss
 import numpy as np
 
+from datetime import datetime
 from PIL import Image
 from openai import OpenAI
 from langchain_community.embeddings import OpenAIEmbeddings
@@ -186,6 +187,7 @@ def get_descr_filepath(images_dir):
     return descr_filepath
 
 
+#token reducing utils
 def remove_description_pretense(description):
     """
     outliers:
@@ -321,3 +323,28 @@ def query_for_related_descriptions(api_key, query, embeddings_pickle_file, image
     print(search_ouput)
     print(images_ranked)
     return images_ranked
+
+
+#logging utils
+def create_logging_entry(input, rephrased_input, output):
+    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    return {'time_stamp' : current_date_time, 'input' : input, 'rephrased_input' : rephrased_input, 'output' : output}
+
+
+def store_logging_entry(logging_file, entry):
+    try:
+        with open(logging_file, 'r') as file:
+            if os.path.getsize(logging_file) != 0:
+              existing_data = json.load(file)
+            else:
+                existing_data = []
+    except FileNotFoundError:
+        existing_data = []
+        print('logging store: error getting existing')
+
+    existing_data.append(entry)
+
+    #write the combined data back to the file
+    with open(logging_file, 'w') as file:
+        json.dump(existing_data, file, indent=2)

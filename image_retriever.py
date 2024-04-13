@@ -8,6 +8,8 @@ import re
 
 from openai import OpenAI
 
+from utils import create_logging_entry, store_logging_entry
+
 OPEN_PNG_CMD = 'open'
 
 
@@ -187,6 +189,7 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
     client = OpenAI(api_key=api_key)
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)
     req_start_time = time.perf_counter()
+    retrieval_prompt_orig = retrieval_prompt
     if rephrase:
         retrieval_prompt = rephrase_prompt(api_key, retrieval_prompt)
         print(f"Prompt rephrased to: {retrieval_prompt}")
@@ -231,6 +234,11 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
         print('got output as string instead of list')
         output_images = [output_images]
     print(f"{len(output_images)} images")
+
+    #store to logs
+    logging_entry = create_logging_entry(retrieval_prompt_orig, retrieval_prompt, str(output_images))
+    logging_file = os.path.join('.', 'query_logs', api_key[-5:] + '_logs.json')
+    store_logging_entry(logging_file, logging_entry)
 
     print(output_images)
     return output_images
