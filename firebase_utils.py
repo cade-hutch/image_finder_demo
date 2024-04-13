@@ -3,7 +3,12 @@ import sys
 import time
 import json
 import io
-import requests
+#import requests
+
+try:
+    import requests
+except:
+    import Requests as requests
 import datetime
 import firebase_admin
 
