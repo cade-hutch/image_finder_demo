@@ -157,7 +157,7 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
         generate_total_time = 0.0
         if new_images:
             for i, generation_time in enumerate(generate_image_descrptions(new_images, images_dir, st.session_state.user_openai_api_key)):
-                generate_total_time += generation_time
+                generate_total_time += generation_time[1]
                 st.write(f"({i+1}/{len(new_images)}) Finished generating for {new_images[i]} in {generation_time} seconds")
 
         if type(generate_total_time) == list: #unsuccesful generate/did not finish
