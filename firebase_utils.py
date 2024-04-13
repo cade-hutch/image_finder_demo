@@ -241,6 +241,7 @@ if __name__ == "__main__":
     remote_image_folder_name = image_folder[-5:]
     t_start = time.perf_counter()
     #init_app(init_name='main_func')
+    print("hERe")
     download_descr_file(descr_file)
     download_images(remote_image_folder_name, image_folder)
 
