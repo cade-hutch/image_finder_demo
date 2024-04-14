@@ -340,4 +340,9 @@ if 'display_infobar_for_existing_images' not in st.session_state:
 if 'show_retrieval_page' not in st.session_state:
     st.session_state.show_retrieval_page = True
 
+if 'listed' not in st.session_state:
+    os.system('which pip')
+    os.system('pip list')
+    st.session_state.listed = True
+
 main()
