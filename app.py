@@ -14,6 +14,7 @@ JSON_DESCRITPIONS_DIR = os.path.join(MAIN_DIR, 'json')
 JSON_DESCR_SUFFIX = '_descriptions.json'
 IMAGE_BASE_DIR = os.path.join(MAIN_DIR, 'image_base')
 
+DEPLOYED_PYTHON_PATH = '/home/adminuser/venv/bin/python'
 
 
 def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only once, rest of function checks completion to be ran repitative until processe complete
@@ -23,7 +24,11 @@ def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only 
     if not os.path.exists(local_images_folder):
         os.mkdir(local_images_folder)
     print('SYNCING LOCAL WITH REMOTE')
-    process = subprocess.Popen(['python', 'firebase_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    if os.path.exists(DEPLOYED_PYTHON_PATH):
+        process = subprocess.Popen([DEPLOYED_PYTHON_PATH, 'firebase_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    else:
+        process = subprocess.Popen(['python', 'firebase_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
 
     # Check if the subprocess ended without errors
