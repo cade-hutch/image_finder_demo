@@ -3,7 +3,7 @@ import sys
 import time
 import json
 import io
-import requests
+#import requests
 import datetime
 import firebase_admin
 
@@ -120,12 +120,12 @@ def get_file_url(filename):
     return blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=15), method="GET")
 
 
-def fetch_image_descriptions(file_url, api_key=None):
-    response = requests.get(file_url)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        raise Exception(f"Failed to fetch file: HTTP {response.status_code}")
+# def fetch_image_descriptions(file_url, api_key=None):
+#     response = requests.get(file_url)
+#     if response.status_code == 200:
+#         return response.json()
+#     else:
+#         raise Exception(f"Failed to fetch file: HTTP {response.status_code}")
 
 
 def list_files_in_folder(folder_name, search_pngs=True):
