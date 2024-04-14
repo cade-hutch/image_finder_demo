@@ -18,7 +18,6 @@ IMAGE_BASE_DIR = os.path.join(MAIN_DIR, 'image_base')
 DEPLOYED_PYTHON_PATH = '/home/adminuser/venv/bin/python'
 
 
-
 def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only once, rest of function checks completion to be ran repitative until processe complete
     basename = create_image_dir_name(api_key)
     json_descr_file = os.path.join(JSON_DESCRITPIONS_DIR, basename + JSON_DESCR_SUFFIX)
@@ -345,12 +344,5 @@ if 'display_infobar_for_existing_images' not in st.session_state:
 
 if 'show_retrieval_page' not in st.session_state:
     st.session_state.show_retrieval_page = True
-
-if 'listed' not in st.session_state:
-    os.system('which pip')
-    os.system('pip list')
-    print(sys.executable)
-    print(st.__version__)
-    st.session_state.listed = True
 
 main()
