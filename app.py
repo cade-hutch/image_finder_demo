@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import streamlit as st
 import subprocess
@@ -343,6 +344,8 @@ if 'show_retrieval_page' not in st.session_state:
 if 'listed' not in st.session_state:
     os.system('which pip')
     os.system('pip list')
+    print(sys.executable)
+    print(st.__version__)
     st.session_state.listed = True
 
 main()
