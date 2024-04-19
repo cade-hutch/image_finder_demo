@@ -9,12 +9,6 @@ from langchain_community.embeddings import OpenAIEmbeddings
 
 from utils import reduce_png_quality, get_descriptions_from_json, create_and_store_embeddings_to_pickle, add_new_descr_to_embedding_pickle, remove_description_pretense
 
-
-# IMAGE_QUESTION = """The following is an image from an Apple iPhone camera roll. First, determine if the image is a screenshot or was taken from the camera. If the image is a screenshot, describes it's contents and determine what application is being displayed.
-# If the image is taken from a camera, describe all of it's contents and include elements (if appplicable) such as the main subject, what is in the foreground and background, and the location of the image.
-# The first sentence of your output should be either "This is a screenshot." or "This is NOT a screenshot." Then, provide the rest of your answer.
-# """
-
 IMAGE_QUESTION = 'As descriptive as possible, describe the contents of this image in a single sentence.'
 
 def headers(api_key):
@@ -26,7 +20,7 @@ def headers(api_key):
 
 def default_payload(image_question):
   return {
-    "model": "gpt-4-vision-preview",
+    "model": "gpt-4-turbo",
     "messages": [
       {
         "role": "user",
@@ -55,7 +49,6 @@ def encode_image(image_path):
 
 def append_to_json_file(file_path, data):
     try:
-        #load existing data from the file
         with open(file_path, 'r') as file:
             if os.path.getsize(file_path) != 0:
               existing_data = json.load(file)
@@ -66,7 +59,6 @@ def append_to_json_file(file_path, data):
 
     existing_data.append(data)
 
-    #write the combined data back to the file
     with open(file_path, 'w') as file:
         json.dump(existing_data, file, indent=2)
 
@@ -76,14 +68,12 @@ def get_file_names_from_json(json_file_path):
         with open(json_file_path, 'r') as file:
             data = json.load(file)
 
-            # Check if the data is a dictionary or a list of dictionaries
-            print(type(data))
+            # Check if the data is a dict or list of dicts
             if isinstance(data, dict):
-                # If it's a dictionary, search for "file_name" keys
-                #return [data.get("file_name", None)]
+                # if dictionary, search for "file_name" keys
                 return data.keys()
             elif isinstance(data, list):
-                # If it's a list, search for "file_name" keys in each dictionary
+                # if list, search for "file_name" keys in each dictionary
                 return [item.get("file_name", None) for item in data]
             else:
                 print("Invalid JSON format. Expected a dictionary or a list of dictionaries.")
@@ -120,18 +110,14 @@ def rename_files_in_directory(directory_path):
     directory_path (str): The path to the directory whose files need to be renamed.
     """
     print('renaming uploaded images')
-    # Check if the provided path is indeed a directory
     if not os.path.isdir(directory_path):
         print("The provided path is not a directory.")
         return
 
-    # Iterate over all files in the directory
     for filename in os.listdir(directory_path):
         file_path = os.path.join(directory_path, filename)
 
-        # Check if it's a file and not a directory
         if os.path.isfile(file_path):
-            # Replace spaces with underscores in the filename
             new_filename = filename.replace(' ', '_')
             new_file_path = os.path.join(directory_path, new_filename)
 
@@ -191,7 +177,6 @@ def generate_image_descrptions(new_pics, images_dir, api_key):
          print(f"KeyError occurred: {e}")
          print(response.json())
          yield 0
-         #return [e] yield this?
 
 
 def update_embeddings(api_key, embeddings_pickle_file, new_descriptions):
