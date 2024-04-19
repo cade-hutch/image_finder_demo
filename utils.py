@@ -125,10 +125,7 @@ def reduce_png_quality(file_path, output_path, quality_level=50, max_size=_10_MB
         return
 
     with Image.open(file_path) as img:
-        # resize the image here if you want
-        # img = img.resize((new_width, new_height))
-
-        # Convert to P mode which is more efficient for PNGs
+        #convert to P mode which is more efficient for PNGs
         img = img.convert('P', palette=Image.ADAPTIVE)
 
         #TODO: does quality_level do anything?
@@ -143,14 +140,13 @@ def reduce_png_quality(file_path, output_path, quality_level=50, max_size=_10_MB
             new_height = int(img.size[1] * scale_factor)
 
             img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-            # Save the image over itself
+            #resave
             img.save(output_path, format='PNG', optimize=True)
 
             file_size = os.path.getsize(output_path)
             print(f"Resized file size: {file_size / 1024**2:.2f} MB")
 
-            # Break if the image becomes too small
+            #break if the image becomes too small
             if img.size[0] < 200 or img.size[1] < 200:
                 break
     
@@ -218,8 +214,6 @@ def remove_description_pretense(description):
             elif description.startswith(' showing '):
                 description = description.replace(" showing", "", 1).lstrip()
             return ss_prefix + description
-
-        
 
     words = description.split()
     if words[1] == 'image' or words[1] == 'photo':

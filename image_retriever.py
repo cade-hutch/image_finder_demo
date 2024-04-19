@@ -1,6 +1,4 @@
 import os
-import platform
-import subprocess
 import json
 import ast
 import time
@@ -9,8 +7,6 @@ import re
 from openai import OpenAI
 
 from utils import create_logging_entry, store_logging_entry
-
-OPEN_PNG_CMD = 'open'
 
 
 def retrieve_contents_from_json(json_file_path):
@@ -40,9 +36,7 @@ def handle_faulty_response_format(res):
         file_names = []
 
         for line in lines:
-            # Check if the line represents a file name
             if line.startswith('-'):
-                # Strip the unnecessary characters and add to the list
                 if '"' in line or "'" in line:
                     file_name = line.strip('- `\'"') 
                     
@@ -58,19 +52,15 @@ def handle_faulty_response_format(res):
             return [s + '.png' for s in res_list]
 
         print("trying format fix 3")
-        # Remove the surrounding brackets and strip whitespace
+        #remove the surrounding brackets and strip whitespace
         stripped_string = res.strip('[] \n')
-
-        # Split the string into lines
         lines = stripped_string.split('\n')
 
         parsed_list = []
 
-        # Iterate over each line
         for line in lines:
-            # Strip leading/trailing whitespace, commas, and quotes
+            #strip leading/trailing whitespace, commas, and quotes
             cleaned_line = line.strip(' ,"\n')
-            # Add the cleaned line to the list
             parsed_list.append(cleaned_line)
 
         return parsed_list
@@ -101,63 +91,6 @@ def rephrase_prompt(api_key, orig_prompt):
     return new_prompt
 
 
-def retrieve_and_open(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=True):
-    client = OpenAI(api_key=api_key)
-    image_descriptions = retrieve_contents_from_json(image_descriptions_file)
-    req_start_time = time.perf_counter()
-    if rephrase:
-        retrieval_prompt = rephrase_prompt(api_key, retrieval_prompt)
-        print(f"Prompt rephrased to: {retrieval_prompt}")
-    response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
-        messages=[
-            {"role": "system", "content": """You are an assistant for finding image file names based on the associated image descriptions given for each photo.
-                                            Here are image file names and corresponding image descriptions in JSON format: {}
-
-                                            The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo.
-
-                                            For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description.
-                                            Provide your answer as a list of strings. Simply provide the desired out list, do not include additional explaination.
-                                        """.format(image_descriptions)},
-            {"role": "user", "content": f"{retrieval_prompt}"},
-        ]
-    )
-    res = response.choices[0].message.content
-    # Replace single quotes with double quotes
-    res = res.replace("'", "\"")
-    # Safely evaluate the string to get a list
-    req_stop_time = time.perf_counter()
-    
-    output_images = []
-    try:
-        output_images = ast.literal_eval(res)
-    except ValueError:
-        print("ValueError: The input is not a valid Python literal.")
-    except SyntaxError:
-        print("SyntaxError: The input string contains a syntax error.")
-        formatted_output = handle_faulty_response_format(res)
-        print(type(res))
-        print(res)
-        print("NEW OUT")
-        print(formatted_output)
-        if type(formatted_output) == list: #TODO: needed?
-            output_images = []
-            for s in formatted_output:
-                if s.endswith('.png'):
-                    output_images.append(s)
-
-    print(f"Got response in {req_stop_time - req_start_time} seconds")
-    print(f"{len(output_images)} images")
-    print(output_images)
-    for pic in output_images:
-        if pic.endswith('.png'):
-            if platform.system() == 'Darwin':
-                try:
-                    subprocess.run([OPEN_PNG_CMD, os.path.join(images_dir, pic)])
-                except Exception as e:
-                    print(f"Error opening the image: {e}")
-
-
 def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=False):
     client = OpenAI(api_key=api_key)
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)
@@ -180,7 +113,6 @@ def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, 
     ]
     )
     res = response.choices[0].message.content
-    # Replace single quotes with double quotes
     res = res.replace("'", "\"")
     print(res)
 
@@ -205,9 +137,8 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
         ]
     )
     res = response.choices[0].message.content
-    # Replace single quotes with double quotes
     res = res.replace("'", "\"")
-    # Safely evaluate the string to get a list
+
     req_stop_time = time.perf_counter()
     
     output_images = []

@@ -121,7 +121,7 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
                 f.write(uploaded_img.getbuffer())
 
         #TODO: One succuess bar, add images while looping?
-        st.success(f"Images saved")
+        st.success(f"Images saved.....Uploading to Databsae")
         
         rename_files_in_directory(images_dir)
         #FIREBASE - STORE IMAGES
@@ -161,7 +161,7 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
 
 def retrieval_page():
     images_count = get_image_count(st.session_state.images_dir)
-    submit_more_images_button = st.button(label='Submit More Images')
+    submit_more_images_button = st.button(label='Submit More Images', key='sm')
     if submit_more_images_button:
         print('more images to submit')
         st.session_state.history = []
@@ -213,7 +213,7 @@ def image_upload_page():
         
 
 def generate_submission_page(uploaded_files):
-    generate_submit_button = st.button(label=f"Click here to generate descriptions for {len(uploaded_files)} images")
+    generate_submit_button = st.button(label=f"Click here to generate descriptions for {len(uploaded_files)} images", key='gs')
     if generate_submit_button:
         st.session_state.show_retrieval_page = True
         st.session_state.display_uploader_page = False
@@ -293,7 +293,7 @@ def main():
             if pics_missing_descriptions:
                 print('images without descriptions found')
                 #need to generated new pics
-                continue_generating_button = st.button(label='Continue generating for {} images'.format(len(pics_missing_descriptions)))
+                continue_generating_button = st.button(label='Continue generating for {} images'.format(len(pics_missing_descriptions), key='cg'))
                 if continue_generating_button:
                     print('display continue generating page')
                     if on_generate_button_submit(pics_missing_descriptions, from_uploaded=False):

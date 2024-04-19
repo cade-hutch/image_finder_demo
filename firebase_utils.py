@@ -63,7 +63,6 @@ def upload_images_from_list(image_paths):
             print('finished {} upload in {}s'.format(image_name, round(t_end - t_start, 2)))
 
 
-
 def upload_images_from_dir(folder_path):
     """
     store images in a folder to folder in firebase
@@ -79,29 +78,19 @@ def upload_images_from_dir(folder_path):
             blob.upload_from_filename(os.path.join(folder_path, filename))
             t_end = time.perf_counter()
             print('finished {} upload in {}s'.format(filename, round(t_end - t_start, 2)))
-            #TODO: needed??
-            if False:
-                pass
-                # Store the public URL in Firestore
-                #doc_ref = db.collection('images').document(filename)
-                # doc_ref.set({
-                #     'filename': filename,
-                #     'url': blob.public_url
-                # })
 
 
 def fetch_and_process_images(blobs):
     for blob in blobs:
-        # The blob's content is read into memory as bytes
+        #the blob's content is read into memory as bytes
         image_bytes = blob.download_as_bytes()
         
-        # The bytes are converted into a PIL Image object
+        #the bytes are converted into a PIL Image object
         image = Image.open(io.BytesIO(image_bytes))
         
-        # Now you can process the image (e.g., resize, crop, save, etc.)
-        # For demonstration, we just show the image format and size
+        #process the image (e.g., resize, crop, save, etc.)
         print(f"Image format: {image.format}, Image size: {image.size}")
-        # You can use image.show() to display the image, or perform other processing tasks.
+        #You can use image.show() to display the image, or perform other processing tasks.
 
 
 def upload_json_descriptions_file(json_descriptions_file):
@@ -192,36 +181,15 @@ def download_descr_file(local_descr_filepath):
     bucket = storage.bucket()
     basename = os.path.basename(local_descr_filepath)
     print('passed in descr filepath', local_descr_filepath)
-    #blob = bucket.blob('json/' + basename)
     blobs = bucket.list_blobs(prefix='json/')
-    #blob_iter = iter(blobs)
     print('got blobs')
     print(blobs)
-    #return list(blobs)
-    # while True:
-    #     print('here')
-    #     try:
-    #         blob = next(blob_iter)
-    #         # Process the blob
-    #         print(blob.name)
-    #     except StopIteration:
-    #         return False
-    # return True
-
 
     for blob in list(blobs):
         print(blob.name)
         if blob.name.endswith(basename):
             blob.download_to_filename(local_descr_filepath)
             return
-        
-
-    # print('descr download got blob')
-    # #if does_descriptions_file_exist(filename=basename):
-    # print('downloading descr')
-    # blob.download_to_filename(local_descr_filepath)
-    # print('downloaded descr')
-    # print('file not found')
 
 
 def fetch_images_as_bytes(blobs):
