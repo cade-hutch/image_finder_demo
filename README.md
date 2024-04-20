@@ -1,34 +1,19 @@
 **Using python 3.11.5**
 
 STEP 1:  
-Create an OpenAI api key. In terminal store as environment variable 'IMAGE_FINDER_DEMO_KEY':
-
-```
-export IMAGE_FINDER_DEMO_KEY="<api_key>"
-```
+Go to [imagefinderdemo2.streamlit.app](https://imagefinderdemo2.streamlit.app/)
 
 STEP 2:  
-Install python requirements:
-
-```
-pip install -r requirements.txt
-```
+Create and submit OpenAI api key
 
 STEP 3:  
-Create a folder within 'image_base' folder to put images in(must be PNGs). Max image size is 20MB.
+Upload selection of images, then click the submission button to kick off descritpion generation.
 
+- The submitted API Key will store your uploads so searches can be done for prior uploads.
 - Recommend 20-50 images for a good sample size and an average image size of less than 10MB to keep API costs low.
-- Function to automatically send reduced version of larger PNGs in progress, but a quick workaround is to take a screenshot of a large image and use that instead of the original.
+- Depending on upload speed and images size, range for each generation time should be around 10-30 seconds.
 
 STEP 4:  
-cd into the created image folder and run:
-
-```
-streamlit run ../../app.py
-```
-
-- There is a button to kick off description generation. If an error occurs, refresh page and click the button again, it will pick up where it left off.
-
-- After successful description generation, the page for image retrieval should come up.
+After successful description generation, images can be searched for by entering a search query.
 
 NOTES: Some output will still be in terminal, currently working to display everything in app.
