@@ -136,8 +136,8 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
             {"role": "user", "content": f"{retrieval_prompt}"},
         ]
     )
-    res = response.choices[0].message.content
-    res = res.replace("'", "\"")
+    res_raw = response.choices[0].message.content
+    res = res_raw.replace("'", "\"")
 
     req_stop_time = time.perf_counter()
     
@@ -167,7 +167,7 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
     print(f"{len(output_images)} images")
 
     #store to logs
-    logging_entry = create_logging_entry(retrieval_prompt_orig, retrieval_prompt, str(output_images))
+    logging_entry = create_logging_entry(retrieval_prompt_orig, retrieval_prompt, str(output_images), str(res_raw))
     logging_file = os.path.join('.', 'query_logs', api_key[-5:] + '_logs.json')
     store_logging_entry(logging_file, logging_entry)
 
