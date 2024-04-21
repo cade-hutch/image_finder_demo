@@ -7,7 +7,7 @@ from image_retriever import retrieve_and_return
 from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, find_new_pic_files
 from utils import validate_openai_api_key, get_image_count, get_descr_filepath
 #TODO: state for importing so firebase only inits once??
-from firebase_utils import init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist, download_images
+from fb_storage_utils import init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist, download_images
 
 MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DESCRITPIONS_DIR = os.path.join(MAIN_DIR, 'json')
@@ -15,29 +15,27 @@ JSON_DESCR_SUFFIX = '_descriptions.json'
 IMAGE_BASE_DIR = os.path.join(MAIN_DIR, 'image_base')
 
 
-
 def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only once, rest of function checks completion to be ran repitative until processe complete
     basename = create_image_dir_name(api_key)
     json_descr_file = os.path.join(JSON_DESCRITPIONS_DIR, basename + JSON_DESCR_SUFFIX)
     local_images_folder = os.path.join(IMAGE_BASE_DIR, basename)
     print('SYNCING LOCAL WITH REMOTE')
-    process = subprocess.Popen(['python', 'firebase_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(['python', 'fb_storage_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
 
     # Check if the subprocess ended without errors
     if process.returncode == 0:
         return True
     else:
-        st.error("sync_local_with_remote: erro during db sync subprocess")
+        st.error("sync_local_with_remote: erro during db storage sync subprocess")
         st.error(stderr.decode())  # Display the error message
         return False
 
 
 def send_request(prompt):
-    print('-----')
-    print('SEND REQUEST CALLED')
-    print(f"SENDING REQUEST: {prompt}")
-    print('-----')
+    print('\n-----')
+    print(f"SENDING NEW REQUEST: {prompt}")
+    
 
     if prompt:
         st.session_state.history = []
@@ -58,8 +56,7 @@ def send_request(prompt):
             output_image_names = retrieve_and_return(images_dir, json_file_path, prompt, st.session_state.user_openai_api_key)
             end_t = time.perf_counter()
 
-            print('RESPONSE RECEIVED')
-            print('output images list:', output_image_names)
+            print('OUTPUT RECEIVED:', output_image_names)
             retrieve_time = format(end_t - start_t, '.2f')
 
             st.session_state.history.append(('text', f"Found {len(output_image_names)} images in {retrieve_time} seconds"))
@@ -91,13 +88,7 @@ def user_folder_exists_local(api_key):
 
 def user_folder_exists_remote(api_key):
     folder_name = api_key[-5:]
-    print('running user_folder_exists')
-    if does_image_folder_exist(folder_name):
-        print('exists_remote: True')
-        return True
-    else:
-        print('exists_remote: False')
-        return False
+    return does_image_folder_exist(folder_name)
 
 
 def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True):

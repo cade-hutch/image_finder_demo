@@ -320,10 +320,10 @@ def query_for_related_descriptions(api_key, query, embeddings_pickle_file, image
 
 
 #logging utils
-def create_logging_entry(input, rephrased_input, output, req_output):
+def create_logging_entry(input, rephrased_input, output, raw_output):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    return {'time_stamp' : current_date_time, 'input' : input, 'rephrased_input' : rephrased_input, 'output' : output, 'req_output' : req_output}
+    return {'time_stamp' : current_date_time, 'input' : input, 'rephrased_input' : rephrased_input, 'output' : output, 'raw_output' : raw_output}
 
 
 def store_logging_entry(logging_file, entry):
