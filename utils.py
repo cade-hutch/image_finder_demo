@@ -322,12 +322,16 @@ def query_for_related_descriptions(api_key, query, embeddings_pickle_file, image
 #logging utils
 def create_logging_entry(input, rephrased_input, output, raw_output):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
     return {'time_stamp' : current_date_time, 'input' : input, 'rephrased_input' : rephrased_input, 'output' : output, 'raw_output' : raw_output}
 
 
+def create_generate_log_entry(filename, filesize, generate_time):
+    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return {'generate_time_stamp' : current_date_time, 'file_name' : filename, 'file_size' : filesize, 'generate_time' : generate_time}
+
+
 def store_logging_entry(logging_file, entry):
-    #save a new singel entry to a json logging file
+    #save a new single entry to a json logging file
     try:
         with open(logging_file, 'r') as file:
             if os.path.getsize(logging_file) != 0:

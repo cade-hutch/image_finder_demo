@@ -35,7 +35,6 @@ def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only 
 def send_request(prompt):
     print('\n-----')
     print(f"SENDING NEW REQUEST: {prompt}")
-    
 
     if prompt:
         st.session_state.history = []
@@ -64,6 +63,8 @@ def send_request(prompt):
             print('error during request')
             output_image_names = []
             st.session_state.history.append(('text', f"Error in image retrieval, try again."))
+
+        print('-----\n')
         
         for img in output_image_names:
             img_path = os.path.join(images_dir, img)

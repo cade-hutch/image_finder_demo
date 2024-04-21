@@ -152,8 +152,8 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
     
     output_images = []
     try:
-        print(res)
         output_images = ast.literal_eval(res)
+        print("literal_eval:", output_images)
     except ValueError:
         print("ValueError: The input is not a valid Python literal.")
     except SyntaxError:
