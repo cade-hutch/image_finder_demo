@@ -332,6 +332,9 @@ def create_generate_log_entry(filename, filesize, generate_time):
 
 def store_logging_entry(logging_file, entry):
     #save a new single entry to a json logging file
+    if not os.path.exists(os.path.dirname(logging_file)):
+        os.path.mkdir(os.path.dirname(logging_file))
+
     try:
         with open(logging_file, 'r') as file:
             if os.path.getsize(logging_file) != 0:
