@@ -42,6 +42,29 @@ def send_request(prompt):
         #TODO: make retriee function return that modified phrase, return that to be displayed
         st.session_state.history.append(('text', f"You: {prompt}"))
         
+        # try:
+        #     images_dir = st.session_state.images_dir
+        #     base_name = os.path.basename(images_dir)
+        #     base_dir = os.path.dirname(os.path.dirname(images_dir))
+        #     descriptions_folder_path = os.path.join(base_dir, 'json')
+        #     json_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
+        #     if not os.path.exists(json_file_path):
+        #         print('descriptions file not found, getting from firebase')
+        #         download_descr_file(json_file_path)
+
+        #     start_t = time.perf_counter()
+        #     output_image_names = retrieve_and_return(images_dir, json_file_path, prompt, st.session_state.user_openai_api_key)
+        #     end_t = time.perf_counter()
+
+        #     print('OUTPUT RECEIVED:', output_image_names)
+        #     retrieve_time = format(end_t - start_t, '.2f')
+
+        #     st.session_state.history.append(('text', f"Found {len(output_image_names)} images in {retrieve_time} seconds"))
+        # except:
+        #     print('error during request')
+        #     output_image_names = []
+        #     st.session_state.history.append(('text', f"Error in image retrieval, try again."))
+
         try:
             images_dir = st.session_state.images_dir
             base_name = os.path.basename(images_dir)
@@ -60,10 +83,11 @@ def send_request(prompt):
             retrieve_time = format(end_t - start_t, '.2f')
 
             st.session_state.history.append(('text', f"Found {len(output_image_names)} images in {retrieve_time} seconds"))
-        except:
+        except Exception as e:
             print('error during request')
             output_image_names = []
             st.session_state.history.append(('text', f"Error in image retrieval, try again."))
+            st.session_state.history.append(('text', f"{e}"))
 
         print('-----\n')
         
