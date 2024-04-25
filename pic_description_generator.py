@@ -88,7 +88,6 @@ def get_file_names_from_json(json_file_path):
 
 
 def find_new_pic_files(images_dir, descriptions_file):
-    print('descr_file:', descriptions_file)
     existing_pictures = get_file_names_from_json(descriptions_file)
     if existing_pictures is None:
         existing_pictures = []
