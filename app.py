@@ -237,7 +237,7 @@ def generate_submission_page(uploaded_files):
         if on_generate_button_submit(uploaded_files):
             st.session_state.upload_more_images = False
             st.session_state.has_submitted_images = True
-            retrieval_page()
+            retrieval_page() #TODO: comment out? and/or change st.session_state.all_descriptions_generated instead so function called at end of main
             
 
 def main():

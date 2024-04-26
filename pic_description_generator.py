@@ -47,7 +47,7 @@ def encode_image(image_path):
     return base64.b64encode(image_file.read()).decode('utf-8')
 
 
-def append_to_json_file(file_path, data):
+def append_to_json_info_file(file_path, data):
     try:
         with open(file_path, 'r') as file:
             if os.path.getsize(file_path) != 0:
@@ -58,6 +58,26 @@ def append_to_json_file(file_path, data):
         existing_data = []
 
     existing_data.append(data)
+
+    with open(file_path, 'w') as file:
+        json.dump(existing_data, file, indent=2)
+
+
+def append_to_json_file(file_path, data):
+    try:
+        with open(file_path, 'r') as file:
+            if os.path.getsize(file_path) != 0:
+              existing_data = json.load(file)
+            else:
+                existing_data = {}
+    except FileNotFoundError as e:
+        print(f"append_to_json_file: {e}")
+        existing_data = {}
+
+    if type(existing_data) == dict:
+      existing_data.update(data)
+    else:
+        assert False, "deprecated JSON description file format"
 
     with open(file_path, 'w') as file:
         json.dump(existing_data, file, indent=2)
@@ -156,20 +176,29 @@ def generate_image_descrptions(new_pics, images_dir, api_key):
       start_time_req = time.perf_counter()
       payload = default_payload(IMAGE_QUESTION)
       payload['messages'][0]['content'][1]['image_url']['url'] = f"data:image/jpeg;base64,{base64_image}"
-      response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers(api_key), json=payload)
+      try_again = False
+      try:
+        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers(api_key), json=payload)
+      except Exception as e:
+          print('error, sleeping')
+          time.sleep(15)
+          try_again = True
+      if try_again:
+        print('trying again')
+        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers(api_key), json=payload)
+          
       stop_time_req = time.perf_counter()
       request_time = round(stop_time_req - start_time_req, 2)
       print('response recieved for {} in {} seconds'.format(pic, request_time))
-      append_to_json_file(json_info_file_path, response.json())
+      append_to_json_info_file(json_info_file_path, response.json())
       try:
         response_description = response.json()["choices"][0]["message"]["content"]
         response_description = remove_description_pretense(response_description)
-        description_obj = {
-          "file_name" : f"{pic}",
-          "description" : f"{response_description}"
-        }
+
+        description_obj = { f"{pic}" : f"{response_description}" }
         append_to_json_file(json_description_file_path, description_obj)
         end_time = time.perf_counter()
+
         yield (response_description, round(end_time - start_time, 2))
 
       except KeyError as e:
