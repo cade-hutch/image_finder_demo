@@ -115,8 +115,7 @@ def firebase_store_query_log(user_id, logging_entry, db=None):
     output = logging_entry['output']
     raw_output = logging_entry['raw_output']
 
-
-    query_id = uuid.uuid4().hex 
+    query_id = req_time_stamp[5:10] + '-' + str(uuid.uuid4().hex)[6:]
     new_query_doc_ref = db.collection('logs').document(user_id).collection('query_logs').document(query_id)
     query_data = {
         'time_stamp' : firestore.SERVER_TIMESTAMP,  # Format as UTC ISO string
@@ -132,6 +131,7 @@ def firebase_store_query_log(user_id, logging_entry, db=None):
 
 
 def sync_log_file_to_db(db, log_json_file, step_through=False):
+    #For syncing local JSON file of query logs to firebase db
     user_id = os.path.basename(log_json_file)[:5]
 
     existing_time_stamps = get_existing_entry_times(db, user_id)
