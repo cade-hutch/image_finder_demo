@@ -43,29 +43,6 @@ def send_request(prompt):
         st.session_state.history = []
         #TODO: make retriee function return that modified phrase, return that to be displayed
         st.session_state.history.append(('text', f"You: {prompt}"))
-        
-        # try:
-        #     images_dir = st.session_state.images_dir
-        #     base_name = os.path.basename(images_dir)
-        #     base_dir = os.path.dirname(os.path.dirname(images_dir))
-        #     descriptions_folder_path = os.path.join(base_dir, 'json')
-        #     json_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
-        #     if not os.path.exists(json_file_path):
-        #         print('descriptions file not found, getting from firebase')
-        #         download_descr_file(json_file_path)
-
-        #     start_t = time.perf_counter()
-        #     output_image_names = retrieve_and_return(images_dir, json_file_path, prompt, st.session_state.user_openai_api_key)
-        #     end_t = time.perf_counter()
-
-        #     print('OUTPUT RECEIVED:', output_image_names)
-        #     retrieve_time = format(end_t - start_t, '.2f')
-
-        #     st.session_state.history.append(('text', f"Found {len(output_image_names)} images in {retrieve_time} seconds"))
-        # except:
-        #     print('error during request')
-        #     output_image_names = []
-        #     st.session_state.history.append(('text', f"Error in image retrieval, try again."))
 
         try:
             images_dir = st.session_state.images_dir
@@ -219,7 +196,6 @@ def retrieval_page():
 
 
 def image_upload_page():
-    #TODO: button to skip upload for existing user/api_key
     if st.session_state.upload_more_images:
         st.write(f"Submit more images for {st.session_state.user_openai_api_key}")
     else:
@@ -229,7 +205,10 @@ def image_upload_page():
     uploaded_files = st.file_uploader("Choose images...", type=['png'], accept_multiple_files=True)
 
     if uploaded_files:
-        generate_submission_page(uploaded_files)
+        if generate_submission_page(uploaded_files):
+            continue_button = st.button(label=f"Back to search", key='continue')
+            if continue_button:
+                print('continue!')
         
 
 def generate_submission_page(uploaded_files):
@@ -240,7 +219,11 @@ def generate_submission_page(uploaded_files):
         if on_generate_button_submit(uploaded_files):
             st.session_state.upload_more_images = False
             st.session_state.has_submitted_images = True
-            retrieval_page() #TODO: comment out? and/or change st.session_state.all_descriptions_generated instead so function called at end of main
+            st.session_state.all_descriptions_generated = True
+            return True
+            #retrieval_page() #TODO: comment out? and/or change st.session_state.all_descriptions_generated instead so function called at end of main
+        else:
+            return False
             
 
 def main():
