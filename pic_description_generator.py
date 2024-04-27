@@ -77,8 +77,28 @@ def append_to_json_file(file_path, data):
     if type(existing_data) == dict:
       existing_data.update(data)
     else:
+        #TODO: old json format
+        append_to_old_json_file(file_path, existing_data, data)
         assert False, "deprecated JSON description file format"
 
+    with open(file_path, 'w') as file:
+        json.dump(existing_data, file, indent=2)
+
+
+def append_to_old_json_file(file_path, existing_data, data):
+    #depracted JSON format(list of dicts instead if single dict)
+    if not list(data.keys()) or list(data.valuess()):
+        assert False, "invalid or deprecated JSON description file format"
+
+    new_data = {
+        "file_name" : list(data.keys())[0],
+        "description" : list(data.valuess())[0]
+    }
+
+    # Append the new data to the existing data
+    existing_data.append(new_data)
+
+    # Write the combined data back to the file
     with open(file_path, 'w') as file:
         json.dump(existing_data, file, indent=2)
 
