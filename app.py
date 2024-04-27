@@ -32,6 +32,8 @@ def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only 
         st.error(stderr.decode())  # Display the error message
         return False
 
+def sync_before_continue_generate(api_key, pics_missing_descriptions):
+    pass
 
 def send_request(prompt):
     print('\n-----')
@@ -223,6 +225,7 @@ def image_upload_page():
     else:
         st.write('Submit images for description generation')
 
+    uploaded_files = []
     uploaded_files = st.file_uploader("Choose images...", type=['png'], accept_multiple_files=True)
 
     if uploaded_files:
@@ -241,7 +244,7 @@ def generate_submission_page(uploaded_files):
             
 
 def main():
-    st.title('Image Finder')
+    st.title('Image Finder Demo')
     footer = """
      <style>
      .footer {
@@ -309,6 +312,7 @@ def main():
             pics_missing_descriptions = get_new_pics_dir(st.session_state.images_dir)
             if pics_missing_descriptions:
                 print('images without descriptions found')
+                sync_before_continue_generate(st.session_state.user_openai_api_key, pics_missing_descriptions)
                 #need to generated new pics
                 continue_generating_button = st.button(label='Continue generating for {} images'.format(len(pics_missing_descriptions), key='cg'))
                 if continue_generating_button:

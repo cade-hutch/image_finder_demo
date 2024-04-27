@@ -100,6 +100,9 @@ def get_existing_entry_times(db, user_id):
     existing_times = [e.get('req_time_stamp') for e in query_data]
     return existing_times
 
+def get_number_of_queries(user_id):
+    #TODO: implement
+    ...
 
 # Get the database client
 def firebase_store_query_log(user_id, logging_entry, db=None):

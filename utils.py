@@ -152,6 +152,9 @@ def reduce_png_quality(file_path, output_path, quality_level=50, max_size=_10_MB
     
 
 def validate_openai_api_key(openai_api_key):
+    validate = False
+    if not openai_api_key.startswith('sk-'):
+        openai_api_key = 'sk-' + openai_api_key
     client = OpenAI(api_key=openai_api_key)
     try:
         response = client.chat.completions.create(
@@ -160,11 +163,26 @@ def validate_openai_api_key(openai_api_key):
             max_tokens=2
         )
         if response.choices[0].message.content:
-            return True
+            validate = True
     #TODO: error code for invalid key is 401
     except Exception as e:
         print(f"An error occurred: {e}")
-        return False
+    #reattempt with 'sk-proj-' prefix
+    if not validate:
+        openai_api_key = 'sk-proj-' + openai_api_key[3:]
+        try:
+            response = client.chat.completions.create(
+                model='gpt-3.5-turbo',
+                messages=[{"role": "user", "content": "Hi"}],
+                max_tokens=2
+            )
+            if response.choices[0].message.content:
+                validate = True
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return False
+    
+    return validate
 
 
 def get_image_count(images_dir):

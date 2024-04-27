@@ -51,16 +51,29 @@ def upload_images_from_list(image_paths):
     """
     bucket = storage.bucket('image-finder-demo.appspot.com')
     folder_name = os.path.basename(os.path.dirname(image_paths[0]))
-    for image_pathname in image_paths:
+    num_imgs = len(image_paths)
+    for i, image_pathname in enumerate(image_paths):
         if image_pathname.endswith((".png")):
             image_name = os.path.basename(image_pathname)
             t_start = time.perf_counter()
             blob = bucket.blob(os.path.join('images', folder_name, image_name))
             t_end1 = time.perf_counter()
             print('finished db connection in {}s'.format(round(t_end1 - t_start, 2)))
-            blob.upload_from_filename(image_pathname)
+            try_again = False
+            try:
+                blob.upload_from_filename(image_pathname)
+            except Exception as e:
+                print(e)
+                print('file upload failed')
+                time.sleep(15)
+                try_again = True
+                print('trying again')
+            if try_again:
+                blob.upload_from_filename(image_pathname)
+                #t_end = time.perf_counter() - 15 TODO: keep sleep in time calc??
+
             t_end = time.perf_counter()
-            print('finished {} upload in {}s'.format(image_name, round(t_end - t_start, 2)))
+            print('({}/{}) finished {} upload in {}s'.format(i+1, num_imgs, image_name, round(t_end - t_start, 2)))
 
 
 def upload_images_from_dir(folder_path):
