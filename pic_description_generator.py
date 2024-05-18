@@ -60,6 +60,10 @@ def append_to_json_info_file(file_path, data):
 
     existing_data.append(data)
 
+    info_dir = os.path.dirname(file_path)
+    if not os.path.exists(info_dir):
+        os.mkdir(info_dir)
+
     with open(file_path, 'w') as file:
         json.dump(existing_data, file, indent=2)
 
