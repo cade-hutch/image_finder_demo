@@ -21,6 +21,7 @@ def headers(api_key):
 def default_payload(image_question):
   return {
     "model": "gpt-4-turbo",
+    #"model": "gpt-4o",
     "messages": [
       {
         "role": "user",
@@ -172,7 +173,6 @@ def get_new_pics_dir(images_dir):#TODO: rename
     descriptions_folder_path = os.path.join(base_dir, 'json')
 
     base_name = os.path.basename(images_dir)
-    json_info_file_path = os.path.join(descriptions_folder_path, base_name + '_info.json')
     json_description_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
 
     new_pics = find_new_pic_files(images_dir, json_description_file_path)
@@ -183,9 +183,8 @@ def generate_image_descrptions(new_pics, images_dir, api_key):
     base_dir = os.path.dirname(os.path.dirname(images_dir))
     descriptions_folder_path = os.path.join(base_dir, 'json')
     base_name = os.path.basename(images_dir)
-    json_info_file_path = os.path.join(descriptions_folder_path, base_name + '_info.json')
+    json_info_file_path = os.path.join(descriptions_folder_path, 'info', base_name + '_info.json')
     json_description_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
-    #client = openai.OpenAI(api_key=api_key) #TODO: which method is faster?
 
     for i, pic in enumerate(new_pics):
       start_time = time.perf_counter()
@@ -200,6 +199,7 @@ def generate_image_descrptions(new_pics, images_dir, api_key):
       try:
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers(api_key), json=payload)
       except Exception as e:
+          print(e)
           print('error, sleeping')
           time.sleep(15)
           try_again = True

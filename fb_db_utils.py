@@ -3,6 +3,7 @@ import uuid
 import json
 import os
 import ast
+import time
 
 import firebase_admin
 from firebase_admin import credentials
@@ -36,8 +37,21 @@ except ValueError:
     print('firebase initialized')
 
 
+#**.stream() method, slightly faster than get_data()??**
+def read_data(db, user_id):
+    #db = firestore.client()
+
+    query_logs_ref = db.collection('logs').document(user_id).collection('query_logs')
+    docs = query_logs_ref.stream()
+    doc_dicts = []
+    for doc in docs:
+        #print(f'{doc.id} => {doc.to_dict()}')
+        doc_dicts.append(doc.to_dict())
+    return doc_dicts
+
+
 #**.stream() method, better than get_data()??**
-def read_data(user_id):
+def print_data(user_id):
     db = firestore.client()
 
     query_logs_ref = db.collection('logs').document(user_id).collection('query_logs')
@@ -100,9 +114,11 @@ def get_existing_entry_times(db, user_id):
     existing_times = [e.get('req_time_stamp') for e in query_data]
     return existing_times
 
+
 def get_number_of_queries(user_id):
-    #TODO: implement
-    ...
+    db = firestore.client()
+    return len(read_data(db, user_id))
+
 
 # Get the database client
 def firebase_store_query_log(user_id, logging_entry, db=None):
@@ -127,7 +143,7 @@ def firebase_store_query_log(user_id, logging_entry, db=None):
     }
 
     new_query_doc_ref.set(query_data)
-    print(f'Query added with ID: {query_id}')
+    #print(f'Query added with ID: {query_id}')
 
 
 def sync_log_file_to_db(db, log_json_file, step_through=False):
@@ -170,8 +186,27 @@ if __name__ == "__main__":
 
     log_file = '/Users/cadeh/Desktop/MyCode/Workspace/image_finder_demo/query_logs/7vufQ_logs.json'
     uid = '7vufQ'
-    sync_log_file_to_db(db, log_file)
 
+    print(get_number_of_queries(uid))
+
+    # s1 = time.perf_counter()
+    # for i in range(20):
+    #     res = get_data(db, uid)
+
+    # e1 = time.perf_counter()
+    # print(f"1: get_data x 10: {e1 - s1}\n")
+
+
+    # s1 = time.perf_counter()
+    # for i in range(20):
+    #     res = read_data(db, uid)
+
+
+    # e1 = time.perf_counter()
+    # print(f"1: read_data x 10: {e1 - s1}")
+
+
+    #sync_log_file_to_db(db, log_file)
     #res = get_existing_entry_times(db, uid)
     # for t in res:
     #     print(t)

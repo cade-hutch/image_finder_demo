@@ -1,8 +1,10 @@
 import os
 import json
 import pickle
+import time
 import faiss
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 
 from datetime import datetime
 from PIL import Image
@@ -11,6 +13,7 @@ from langchain_community.embeddings import OpenAIEmbeddings
 
 
 _10_MB = 10*1024*1024
+_5_MB = 5*1024*1024
 
 def is_valid_image_directory(images_dir_path):
     is_dir = os.path.isdir(images_dir_path)
@@ -113,43 +116,97 @@ def validate_openai_api_key(openai_api_key):
     return True
 
 
-def reduce_png_quality(file_path, output_path, quality_level=50, max_size=_10_MB, scale_factor=0.6):
+#faster(6 seconds vs)
+def reduce_png_quality(file_path, output_path, quality_level=50, max_size=_5_MB, scale_factor=0.6):
     """
     Reduces the quality of a PNG file.
     first attempt with Image.save(), then use Image.resize()
     """
     file_size = os.path.getsize(file_path)
-    #print("file size: {}".format(file_size))
+    print("file size: {}".format(file_size))
 
     if file_size < max_size:
+        print('already under max size')
         return
+    name = os.path.basename(file_path)
+    try:
+        with Image.open(file_path) as img:
+            #convert to P mode which is more efficient for PNGs
+            img = img.convert('P', palette=Image.ADAPTIVE)
+            #TODO: does quality_level do anything?
+            #img.save(output_path, quality=quality_level, optimize=True)
+            img.save(output_path, format='PNG')
 
-    with Image.open(file_path) as img:
-        #convert to P mode which is more efficient for PNGs
-        img = img.convert('P', palette=Image.ADAPTIVE)
+        file_size = os.path.getsize(output_path)
+        mb = file_size / (1024 ** 2)
+        print(f"resized {name} to {mb:.2f}")
+        if file_size > max_size:
+            img = Image.open(output_path)
 
-        #TODO: does quality_level do anything?
-        img.save(output_path, quality=quality_level, optimize=True)
+            while file_size > max_size:
+                new_width = int(img.size[0] * scale_factor)
+                new_height = int(img.size[1] * scale_factor)
 
-    file_size = os.path.getsize(output_path)
-    if file_size > max_size:
-        img = Image.open(output_path)
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                #resave
+                img.save(output_path, format='PNG', optimize=True)
 
-        while file_size > max_size:
-            new_width = int(img.size[0] * scale_factor)
-            new_height = int(img.size[1] * scale_factor)
+                file_size = os.path.getsize(output_path)
+                print(f"Resized {name}: {file_size / 1024**2:.2f} MB")
 
-            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            #resave
-            img.save(output_path, format='PNG', optimize=True)
+                #break if the image becomes too small
+                if img.size[0] < 200 or img.size[1] < 200:
+                    break
+    except Exception as e:
+        print('reduce PNG quality failure')
+        print(e)
 
-            file_size = os.path.getsize(output_path)
-            print(f"Resized file size: {file_size / 1024**2:.2f} MB")
 
-            #break if the image becomes too small
-            if img.size[0] < 200 or img.size[1] < 200:
-                break
-    
+#slower method, better quality??
+def resize_image(image_path, output_folder, max_size=5 * 1024 * 1024):
+    """Resizes a PNG image to be under the specified max size (default 5MB) and saves it to the output folder."""
+    try:
+        with Image.open(image_path) as img:
+            base_name = os.path.basename(image_path)
+            output_path = os.path.join(output_folder, base_name)
+            
+            while True:
+                #save image to a temporary location
+                temp_path = os.path.join(output_folder, "temp_" + base_name)
+                img.save(temp_path, format='PNG')
+                
+                if os.path.getsize(temp_path) <= max_size:
+                    # Once the file size is acceptable, save the image to the output path
+                    os.rename(temp_path, output_path)
+                    print(f"Resized {base_name} to under 5MB")
+                    break
+                
+                #reduce image dimensions proportionally to shrink size
+                new_width = int(img.width * 0.9)
+                new_height = int(img.height * 0.9)
+                img = img.resize((new_width, new_height), Image.LANCZOS)
+                
+                #if the image dimensions get too small and still not under 5MB, stop to avoid excessive quality loss
+                if new_width < 100 or new_height < 100:
+                    print(f"Cannot resize {base_name} to under 5MB without significant quality loss")
+                    break
+                
+    except Exception as e:
+        print(f"Failed to resize {image_path}: {e}")
+
+
+def reduce_png_directory(image_dir, max_size=_5_MB, fast=True):
+    ld = [i for i in os.listdir(image_dir) if os.path.isfile(os.path.join(image_dir, i))]
+    img_paths = [os.path.join(image_dir, img) for img in ld if img.lower().endswith('.png')]
+
+    if fast:
+        with ThreadPoolExecutor() as executor:
+            executor.map(reduce_png_quality, img_paths, img_paths * len(img_paths))
+    else:
+        with ThreadPoolExecutor() as executor:
+            executor.map(resize_image, img_paths, [image_dir] * len(img_paths))
+
+
 
 def validate_openai_api_key(openai_api_key):
     validate = False

@@ -64,7 +64,7 @@ def upload_images_from_list(image_paths):
                 blob.upload_from_filename(image_pathname)
             except Exception as e:
                 print(e)
-                print('file upload failed')
+                print('file upload failed...sleeping and trying again')
                 time.sleep(15)
                 try_again = True
                 print('trying again')

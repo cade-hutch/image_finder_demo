@@ -5,7 +5,7 @@ import subprocess
 
 from image_retriever import retrieve_and_return
 from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, find_new_pic_files
-from utils import validate_openai_api_key, get_image_count, get_descr_filepath
+from utils import validate_openai_api_key, get_image_count, get_descr_filepath, reduce_png_quality
 #TODO: state for importing so firebase only inits once??
 from fb_storage_utils import init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist, download_images
 
@@ -32,8 +32,10 @@ def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only 
         st.error(stderr.decode())  # Display the error message
         return False
 
+
 def sync_before_continue_generate(api_key, pics_missing_descriptions):
     pass
+
 
 def send_request(prompt):
     print('\n-----')
@@ -116,7 +118,9 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
             with open(file_path, "wb") as f:
                 f.write(uploaded_img.getbuffer())
 
+            reduce_png_quality(file_path, file_path)
         #TODO: One succuess bar, add images while looping?
+        #TODO: reduce png quality here before db uploading
         st.success(f"Images saved.....Uploading to Databsae")
         
         rename_files_in_directory(images_dir)
@@ -143,8 +147,14 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
             st.error('Error occured while generating... press generate to try again.')
             st.error(generate_total_time[0])
         else:
-            generate_total_time = format(generate_total_time, '.2f')
-            st.success(f"Finished generating descriptions in {generate_total_time} seconds")
+            mins = 0
+            if generate_total_time > 60:
+                mins = generate_total_time // 60
+                secs = generate_total_time % 60
+                st.success(f"Finished generating descriptions in {int(mins)} mins {secs: .2f} seconds")
+            else:
+                st.success(f"Finished generating descriptions in {generate_total_time: .2f} seconds")
+
             #FIREBASE - STORE JSON
             print('starting json upload')
             descr_filepath = get_descr_filepath(images_dir)
