@@ -21,6 +21,7 @@ def headers(api_key):
 def default_payload(image_question):
   return {
     "model": "gpt-4-turbo",
+    #"model": "gpt-4o",
     "messages": [
       {
         "role": "user",
@@ -47,7 +48,7 @@ def encode_image(image_path):
     return base64.b64encode(image_file.read()).decode('utf-8')
 
 
-def append_to_json_file(file_path, data):
+def append_to_json_info_file(file_path, data):
     try:
         with open(file_path, 'r') as file:
             if os.path.getsize(file_path) != 0:
@@ -59,6 +60,50 @@ def append_to_json_file(file_path, data):
 
     existing_data.append(data)
 
+    info_dir = os.path.dirname(file_path)
+    if not os.path.exists(info_dir):
+        os.mkdir(info_dir)
+
+    with open(file_path, 'w') as file:
+        json.dump(existing_data, file, indent=2)
+
+
+def append_to_json_file(file_path, data):
+    try:
+        with open(file_path, 'r') as file:
+            if os.path.getsize(file_path) != 0:
+              existing_data = json.load(file)
+            else:
+                existing_data = {}
+    except FileNotFoundError as e:
+        print(f"append_to_json_file: {e}")
+        existing_data = {}
+
+    if type(existing_data) == dict:
+      existing_data.update(data)
+    else:
+        #TODO: old json format
+        append_to_old_json_file(file_path, existing_data, data)
+        assert False, "deprecated JSON description file format"
+
+    with open(file_path, 'w') as file:
+        json.dump(existing_data, file, indent=2)
+
+
+def append_to_old_json_file(file_path, existing_data, data):
+    #depracted JSON format(list of dicts instead if single dict)
+    if not list(data.keys()) or list(data.valuess()):
+        assert False, "invalid or deprecated JSON description file format"
+
+    new_data = {
+        "file_name" : list(data.keys())[0],
+        "description" : list(data.valuess())[0]
+    }
+
+    # Append the new data to the existing data
+    existing_data.append(new_data)
+
+    # Write the combined data back to the file
     with open(file_path, 'w') as file:
         json.dump(existing_data, file, indent=2)
 
@@ -88,7 +133,6 @@ def get_file_names_from_json(json_file_path):
 
 
 def find_new_pic_files(images_dir, descriptions_file):
-    print('descr_file:', descriptions_file)
     existing_pictures = get_file_names_from_json(descriptions_file)
     if existing_pictures is None:
         existing_pictures = []
@@ -133,7 +177,6 @@ def get_new_pics_dir(images_dir):#TODO: rename
     descriptions_folder_path = os.path.join(base_dir, 'json')
 
     base_name = os.path.basename(images_dir)
-    json_info_file_path = os.path.join(descriptions_folder_path, base_name + '_info.json')
     json_description_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
 
     new_pics = find_new_pic_files(images_dir, json_description_file_path)
@@ -144,9 +187,8 @@ def generate_image_descrptions(new_pics, images_dir, api_key):
     base_dir = os.path.dirname(os.path.dirname(images_dir))
     descriptions_folder_path = os.path.join(base_dir, 'json')
     base_name = os.path.basename(images_dir)
-    json_info_file_path = os.path.join(descriptions_folder_path, base_name + '_info.json')
+    json_info_file_path = os.path.join(descriptions_folder_path, 'info', base_name + '_info.json')
     json_description_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
-    #client = openai.OpenAI(api_key=api_key) #TODO: which method is faster?
 
     for i, pic in enumerate(new_pics):
       start_time = time.perf_counter()
@@ -157,20 +199,30 @@ def generate_image_descrptions(new_pics, images_dir, api_key):
       start_time_req = time.perf_counter()
       payload = default_payload(IMAGE_QUESTION)
       payload['messages'][0]['content'][1]['image_url']['url'] = f"data:image/jpeg;base64,{base64_image}"
-      response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers(api_key), json=payload)
+      try_again = False
+      try:
+        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers(api_key), json=payload)
+      except Exception as e:
+          print(e)
+          print('error, sleeping')
+          time.sleep(15)
+          try_again = True
+      if try_again:
+        print('trying again')
+        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers(api_key), json=payload)
+          
       stop_time_req = time.perf_counter()
       request_time = round(stop_time_req - start_time_req, 2)
       print('response recieved for {} in {} seconds'.format(pic, request_time))
-      append_to_json_file(json_info_file_path, response.json())
+      append_to_json_info_file(json_info_file_path, response.json())
       try:
         response_description = response.json()["choices"][0]["message"]["content"]
         response_description = remove_description_pretense(response_description)
-        description_obj = {
-          "file_name" : f"{pic}",
-          "description" : f"{response_description}"
-        }
+
+        description_obj = { f"{pic}" : f"{response_description}" }
         append_to_json_file(json_description_file_path, description_obj)
         end_time = time.perf_counter()
+
         yield (response_description, round(end_time - start_time, 2))
 
       except KeyError as e:

@@ -38,7 +38,7 @@ except ValueError:
     print('firebase initialized')
 
 db = firestore.client()
-bucket = storage.bucket()
+bucket = storage.bucket('image-finder-demo.appspot.com')
 
 
 def init_app(init_name='app'):
@@ -49,25 +49,38 @@ def upload_images_from_list(image_paths):
     """
     store images from list of paths to folder in firebase
     """
-    bucket = storage.bucket()
+    bucket = storage.bucket('image-finder-demo.appspot.com')
     folder_name = os.path.basename(os.path.dirname(image_paths[0]))
-    for image_pathname in image_paths:
+    num_imgs = len(image_paths)
+    for i, image_pathname in enumerate(image_paths):
         if image_pathname.endswith((".png")):
             image_name = os.path.basename(image_pathname)
             t_start = time.perf_counter()
             blob = bucket.blob(os.path.join('images', folder_name, image_name))
             t_end1 = time.perf_counter()
             print('finished db connection in {}s'.format(round(t_end1 - t_start, 2)))
-            blob.upload_from_filename(image_pathname)
+            try_again = False
+            try:
+                blob.upload_from_filename(image_pathname)
+            except Exception as e:
+                print(e)
+                print('file upload failed...sleeping and trying again')
+                time.sleep(15)
+                try_again = True
+                print('trying again')
+            if try_again:
+                blob.upload_from_filename(image_pathname)
+                #t_end = time.perf_counter() - 15 TODO: keep sleep in time calc??
+
             t_end = time.perf_counter()
-            print('finished {} upload in {}s'.format(image_name, round(t_end - t_start, 2)))
+            print('({}/{}) finished {} upload in {}s'.format(i+1, num_imgs, image_name, round(t_end - t_start, 2)))
 
 
 def upload_images_from_dir(folder_path):
     """
     store images in a folder to folder in firebase
     """
-    bucket = storage.bucket()
+    bucket = storage.bucket('image-finder-demo.appspot.com')
     folder_name = os.path.basename(folder_path)
     for filename in os.listdir(folder_path):
         if filename.endswith((".png")):
@@ -97,7 +110,7 @@ def upload_json_descriptions_file(json_descriptions_file):
     """
     upload JSON file to firebase
     """
-    bucket = storage.bucket()
+    bucket = storage.bucket('image-finder-demo.appspot.com')
     json_descriptions_filename = os.path.basename(json_descriptions_file)
     if json_descriptions_file.endswith((".json")):
         blob = bucket.blob(os.path.join('json', json_descriptions_filename))
@@ -105,7 +118,7 @@ def upload_json_descriptions_file(json_descriptions_file):
 
 
 def get_file_url(filename):
-    bucket = storage.bucket()
+    bucket = storage.bucket('image-finder-demo.appspot.com')
     blob = bucket.blob(filename)
     return blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=15), method="GET")
 
@@ -119,7 +132,7 @@ def fetch_image_descriptions(file_url, api_key=None):
 
 
 def list_files_in_folder(folder_name, search_pngs=True):
-    bucket = storage.bucket()
+    bucket = storage.bucket('image-finder-demo.appspot.com')
     blobs = bucket.list_blobs(prefix=folder_name)
     if search_pngs and blobs:
         #WARNING: line below causes async issue with streamlit
@@ -132,11 +145,13 @@ def list_files_in_folder(folder_name, search_pngs=True):
 
 def does_image_folder_exist(folder_name):
     images_dir = "images/{}".format(folder_name)
-    bucket = storage.bucket()
+    bucket = storage.bucket('image-finder-demo.appspot.com')
     blobs = list(bucket.list_blobs(prefix=images_dir))
-    if len(blobs)>1:
+    if len(blobs) > 1:
+        print('found user image folder in firebase')
         return True
     else:
+        print('no user image folder in firebase')
         return False
 
 
@@ -161,7 +176,7 @@ def download_images(remote_folder, local_folder):
     if not remote_folder.startswith('images/'):
         remote_folder = os.path.join('images', remote_folder)
     print('a')
-    bucket = storage.bucket()
+    bucket = storage.bucket('image-finder-demo.appspot.com')
     #blobs = list_files_in_folder(remote_folder)
     blobs = bucket.list_blobs(prefix=remote_folder)
     print('b')
@@ -178,7 +193,7 @@ def download_images(remote_folder, local_folder):
 
 
 def download_descr_file(local_descr_filepath):
-    bucket = storage.bucket()
+    bucket = storage.bucket('image-finder-demo.appspot.com')
     basename = os.path.basename(local_descr_filepath)
     print('passed in descr filepath', local_descr_filepath)
     blobs = bucket.list_blobs(prefix='json/')

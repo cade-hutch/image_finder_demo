@@ -7,7 +7,19 @@ import re
 from openai import OpenAI
 
 from utils import create_logging_entry, store_logging_entry
+from fb_db_utils import firebase_store_query_log
 
+MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
+LOGS_DIR = os.path.join(MAIN_DIR, 'query_logs')
+
+MODELS = [
+    "gpt-3.5-turbo-0125",
+    "gpt-4-turbo",
+    "gpt-4",
+    #"gpt-4-1106-preview", *Most used
+    #'gpt-4-turbo-2024-04-09', same as base turbo?
+    "gpt-4o"
+]
 
 def retrieve_contents_from_json(json_file_path):
     try:
@@ -91,42 +103,48 @@ def rephrase_prompt(api_key, orig_prompt):
     return new_prompt
 
 
+#TODO: remove this
 def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=False):
     client = OpenAI(api_key=api_key)
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)
     req_start_time = time.perf_counter()
     if rephrase:
         retrieval_prompt = rephrase_prompt(api_key, retrieval_prompt)
-        print(f"Prompt rephrased to: {retrieval_prompt}")
+        print(f"PROMPT REPHRASED: {retrieval_prompt}")
+    print('-----')
+
     response = client.chat.completions.create(
-    model="gpt-4-1106-preview",
-    messages=[
-        {"role": "system", "content": """You are an assistant for finding image file names based on the associated image descriptions given for each photo.
-                                        Here are image filenames as keys and corresponding image descriptions as values in JSON format: {}
+        model="gpt-4-1106-preview",
+        messages=[
+            {"role": "system", "content": """You are an assistant for finding image file names based on the associated image descriptions given for each photo.
+                                            Here are image filenames as keys and corresponding image descriptions as values in JSON format: {}
 
-                                        The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo.
+                                            The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo.
 
-                                        For example, if a user asks you for the file names of pcitures that have animals in them, find and output all image file names that contain a reference to an animal in their description.
-                                        For each image you output, provide a justification for choosing it.
-                                    """.format(image_descriptions)},
-        {"role": "user", "content": f"{retrieval_prompt}"},
-    ]
+                                            For example, if a user asks you for the file names of pcitures that have animals in them, find and output all image file names that contain a reference to an animal in their description.
+                                            For each image you output, provide a justification for choosing it.
+                                        """.format(image_descriptions)},
+            {"role": "user", "content": f"{retrieval_prompt}"},
+        ]
     )
     res = response.choices[0].message.content
     res = res.replace("'", "\"")
     print(res)
 
 
-def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=True):
+def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=True, return_rephrase=False):
     client = OpenAI(api_key=api_key)
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)
     req_start_time = time.perf_counter()
+    print('-----')
+
     retrieval_prompt_orig = retrieval_prompt
     if rephrase:
         retrieval_prompt = rephrase_prompt(api_key, retrieval_prompt)
-        print(f"Prompt rephrased to: {retrieval_prompt}")
+        print(f"PROMPT REPHRASED: {retrieval_prompt}")
+
     response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
+        model=MODELS[0],
         messages=[
             {"role": "system", "content": (f"You are an assistant for finding image file names based on the associated image descriptions given for each photo."
                                             f"Here are image filenames as keys and corresponding image descriptions as values in JSON format: {image_descriptions}"
@@ -136,15 +154,15 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
             {"role": "user", "content": f"{retrieval_prompt}"},
         ]
     )
-    res = response.choices[0].message.content
-    res = res.replace("'", "\"")
+    res_raw = response.choices[0].message.content
+    res = res_raw.replace("'", "\"")
 
     req_stop_time = time.perf_counter()
     
     output_images = []
     try:
-        print(res)
         output_images = ast.literal_eval(res)
+        print("literal_eval:", output_images)
     except ValueError:
         print("ValueError: The input is not a valid Python literal.")
     except SyntaxError:
@@ -164,12 +182,20 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
     if type(output_images) == str:
         print('got output as string instead of list')
         output_images = [output_images]
-    print(f"{len(output_images)} images")
 
+    t_log_s = time.perf_counter()
     #store to logs
-    logging_entry = create_logging_entry(retrieval_prompt_orig, retrieval_prompt, str(output_images))
-    logging_file = os.path.join('.', 'query_logs', api_key[-5:] + '_logs.json')
-    store_logging_entry(logging_file, logging_entry)
+    logging_entry = create_logging_entry(retrieval_prompt_orig, retrieval_prompt, output_images, str(res_raw))
+    #firebase upload single
+    firebase_store_query_log(api_key[-5:], logging_entry)
 
-    print(output_images)
-    return output_images
+    #local append to JSON file
+    logging_file = os.path.join(LOGS_DIR, api_key[-5:] + '_logs.json')
+    store_logging_entry(logging_file, logging_entry)
+    t_log_e = time.perf_counter()
+    print(f'logging time: {round(t_log_e - t_log_s, 4)}')
+    retrieval_prompt
+    if return_rephrase:
+        return retrieval_prompt, output_images
+    else:
+        return output_images

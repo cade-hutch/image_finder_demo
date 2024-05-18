@@ -5,45 +5,47 @@ import subprocess
 
 from image_retriever import retrieve_and_return
 from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, find_new_pic_files
-from utils import validate_openai_api_key, get_image_count, get_descr_filepath
+from utils import validate_openai_api_key, get_image_count, get_descr_filepath, reduce_png_quality
 #TODO: state for importing so firebase only inits once??
-from firebase_utils import init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist, download_images
+from fb_storage_utils import init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist, download_images
 
 MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DESCRITPIONS_DIR = os.path.join(MAIN_DIR, 'json')
 JSON_DESCR_SUFFIX = '_descriptions.json'
 IMAGE_BASE_DIR = os.path.join(MAIN_DIR, 'image_base')
 
-
+DEPLOYED_PYTHON_PATH = '/home/adminuser/venv/bin/python'
 
 def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only once, rest of function checks completion to be ran repitative until processe complete
     basename = create_image_dir_name(api_key)
     json_descr_file = os.path.join(JSON_DESCRITPIONS_DIR, basename + JSON_DESCR_SUFFIX)
     local_images_folder = os.path.join(IMAGE_BASE_DIR, basename)
     print('SYNCING LOCAL WITH REMOTE')
-    process = subprocess.Popen(['python', 'firebase_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen([DEPLOYED_PYTHON_PATH, 'fb_storage_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
 
     # Check if the subprocess ended without errors
     if process.returncode == 0:
         return True
     else:
-        st.error("sync_local_with_remote: erro during db sync subprocess")
+        st.error("sync_local_with_remote: erro during db storage sync subprocess")
         st.error(stderr.decode())  # Display the error message
         return False
 
 
+def sync_before_continue_generate(api_key, pics_missing_descriptions):
+    pass
+
+
 def send_request(prompt):
-    print('-----')
-    print('SEND REQUEST CALLED')
-    print(f"SENDING REQUEST: {prompt}")
-    print('-----')
+    print('\n-----')
+    print(f"SENDING NEW REQUEST: {prompt}")
 
     if prompt:
         st.session_state.history = []
         #TODO: make retriee function return that modified phrase, return that to be displayed
         st.session_state.history.append(('text', f"You: {prompt}"))
-        
+
         try:
             images_dir = st.session_state.images_dir
             base_name = os.path.basename(images_dir)
@@ -58,15 +60,17 @@ def send_request(prompt):
             output_image_names = retrieve_and_return(images_dir, json_file_path, prompt, st.session_state.user_openai_api_key)
             end_t = time.perf_counter()
 
-            print('RESPONSE RECEIVED')
-            print('output images list:', output_image_names)
+            print('OUTPUT RECEIVED:', output_image_names)
             retrieve_time = format(end_t - start_t, '.2f')
 
             st.session_state.history.append(('text', f"Found {len(output_image_names)} images in {retrieve_time} seconds"))
-        except:
+        except Exception as e:
             print('error during request')
             output_image_names = []
             st.session_state.history.append(('text', f"Error in image retrieval, try again."))
+            st.session_state.history.append(('text', f"{e}"))
+
+        print('-----\n')
         
         for img in output_image_names:
             img_path = os.path.join(images_dir, img)
@@ -91,13 +95,7 @@ def user_folder_exists_local(api_key):
 
 def user_folder_exists_remote(api_key):
     folder_name = api_key[-5:]
-    print('running user_folder_exists')
-    if does_image_folder_exist(folder_name):
-        print('exists_remote: True')
-        return True
-    else:
-        print('exists_remote: False')
-        return False
+    return does_image_folder_exist(folder_name)
 
 
 def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True):
@@ -120,7 +118,9 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
             with open(file_path, "wb") as f:
                 f.write(uploaded_img.getbuffer())
 
+            reduce_png_quality(file_path, file_path)
         #TODO: One succuess bar, add images while looping?
+        #TODO: reduce png quality here before db uploading
         st.success(f"Images saved.....Uploading to Databsae")
         
         rename_files_in_directory(images_dir)
@@ -147,8 +147,14 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
             st.error('Error occured while generating... press generate to try again.')
             st.error(generate_total_time[0])
         else:
-            generate_total_time = format(generate_total_time, '.2f')
-            st.success(f"Finished generating descriptions in {generate_total_time} seconds")
+            mins = 0
+            if generate_total_time > 60:
+                mins = generate_total_time // 60
+                secs = generate_total_time % 60
+                st.success(f"Finished generating descriptions in {int(mins)} mins {secs: .2f} seconds")
+            else:
+                st.success(f"Finished generating descriptions in {generate_total_time: .2f} seconds")
+
             #FIREBASE - STORE JSON
             print('starting json upload')
             descr_filepath = get_descr_filepath(images_dir)
@@ -200,16 +206,19 @@ def retrieval_page():
 
 
 def image_upload_page():
-    #TODO: button to skip upload for existing user/api_key
     if st.session_state.upload_more_images:
         st.write(f"Submit more images for {st.session_state.user_openai_api_key}")
     else:
         st.write('Submit images for description generation')
 
+    uploaded_files = []
     uploaded_files = st.file_uploader("Choose images...", type=['png'], accept_multiple_files=True)
 
     if uploaded_files:
-        generate_submission_page(uploaded_files)
+        if generate_submission_page(uploaded_files):
+            continue_button = st.button(label=f"Back to search", key='continue')
+            if continue_button:
+                print('continue!')
         
 
 def generate_submission_page(uploaded_files):
@@ -220,11 +229,15 @@ def generate_submission_page(uploaded_files):
         if on_generate_button_submit(uploaded_files):
             st.session_state.upload_more_images = False
             st.session_state.has_submitted_images = True
-            retrieval_page()
+            st.session_state.all_descriptions_generated = True
+            return True
+            #retrieval_page() #TODO: comment out? and/or change st.session_state.all_descriptions_generated instead so function called at end of main
+        else:
+            return False
             
 
 def main():
-    st.title('Image Finder')
+    st.title('Image Finder Demo')
     footer = """
      <style>
      .footer {
@@ -292,6 +305,7 @@ def main():
             pics_missing_descriptions = get_new_pics_dir(st.session_state.images_dir)
             if pics_missing_descriptions:
                 print('images without descriptions found')
+                sync_before_continue_generate(st.session_state.user_openai_api_key, pics_missing_descriptions)
                 #need to generated new pics
                 continue_generating_button = st.button(label='Continue generating for {} images'.format(len(pics_missing_descriptions), key='cg'))
                 if continue_generating_button:
