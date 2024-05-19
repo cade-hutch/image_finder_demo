@@ -4,10 +4,9 @@ import streamlit as st
 import subprocess
 
 from image_retriever import retrieve_and_return
-from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, find_new_pic_files
+from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir
 from utils import validate_openai_api_key, get_image_count, get_descr_filepath, reduce_png_quality
-#TODO: state for importing so firebase only inits once??
-from fb_storage_utils import init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist, download_images
+from fb_storage_utils import upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist
 
 MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DESCRITPIONS_DIR = os.path.join(MAIN_DIR, 'json')
@@ -16,7 +15,7 @@ IMAGE_BASE_DIR = os.path.join(MAIN_DIR, 'image_base')
 
 DEPLOYED_PYTHON_PATH = '/home/adminuser/venv/bin/python'
 
-def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only once, rest of function checks completion to be ran repitative until processe complete
+def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only once, rest of function checks completion to be ran repeatitive until processes complete
     basename = create_image_dir_name(api_key)
     json_descr_file = os.path.join(JSON_DESCRITPIONS_DIR, basename + JSON_DESCR_SUFFIX)
     local_images_folder = os.path.join(IMAGE_BASE_DIR, basename)
@@ -24,12 +23,12 @@ def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only 
     process = subprocess.Popen([DEPLOYED_PYTHON_PATH, 'fb_storage_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
 
-    # Check if the subprocess ended without errors
+    #check if the subprocess ended without errors
     if process.returncode == 0:
         return True
     else:
         st.error("sync_local_with_remote: erro during db storage sync subprocess")
-        st.error(stderr.decode())  # Display the error message
+        st.error(stderr.decode())
         return False
 
 
@@ -161,7 +160,7 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
             upload_json_descriptions_file(descr_filepath)
             print('finished json upload')
 
-    st.session_state.all_descriptions_generated =True
+    st.session_state.all_descriptions_generated = True
     return True #TODO: handle good/bad return
 
 
@@ -181,13 +180,15 @@ def retrieval_page():
         with st.form('prompt_submission'):
             text_input_col, submit_btn_col = st.columns([5, 1])
             with text_input_col:
-                user_input = st.text_input(label="why is this required", label_visibility='collapsed', key="user_input", placeholder="What would you like to find?")
+                user_input = st.text_input(label="why is this required", label_visibility='collapsed',
+                                           key="user_input", placeholder="What would you like to find?")
 
             with submit_btn_col:
                 submit_button = st.form_submit_button(label='Send')
     
         if submit_button:
             send_request(user_input)
+
         #NOTE: async works here
         images_to_display = []
         for item_type, content in st.session_state.history:
@@ -195,8 +196,7 @@ def retrieval_page():
                 st.text(content)
             elif item_type == 'image':
                 images_to_display.append(content)
-                #image_name = os.path.basename(content)
-                #st.image(content, caption=image_name)
+
         for i in range(0, len(images_to_display), 2):
             col1, col2 = st.columns(2)
             col1.image(images_to_display[i], use_column_width=True)
@@ -231,7 +231,6 @@ def generate_submission_page(uploaded_files):
             st.session_state.has_submitted_images = True
             st.session_state.all_descriptions_generated = True
             return True
-            #retrieval_page() #TODO: comment out? and/or change st.session_state.all_descriptions_generated instead so function called at end of main
         else:
             return False
             
@@ -263,7 +262,8 @@ def main():
         with st.form('api_key_submission'):
             api_key_text_input_col, api_key_submit_btn_col = st.columns([5, 1])
             with api_key_text_input_col:
-                user_api_key_input = st.text_input(label="why is this required", label_visibility='collapsed', key="user_api_key_input", placeholder="Enter OpenAI API key")
+                user_api_key_input = st.text_input(label="why is this required", label_visibility='collapsed',
+                                                   key="user_api_key_input", placeholder="Enter OpenAI API key")
 
             with api_key_submit_btn_col:
                 submit_api_key_button = st.form_submit_button(label='Submit')
@@ -273,8 +273,9 @@ def main():
                 st.session_state.user_openai_api_key = user_api_key_input
                 st.session_state.submitted_api_key = True
                 st.success('API key validated')
-                #remote_folder_exists = asyncio.run(user_folder_exists_remote(user_api_key_input))
+
                 remote_folder_exists = user_folder_exists_remote(user_api_key_input) #firestore folder exists
+
                 if user_folder_exists_local(user_api_key_input):
                     st.session_state.api_key_exists = True
                     #TODO: validate with remote?
@@ -290,7 +291,6 @@ def main():
     #if (st.session_state.submitted_api_key and not st.session_state.has_submitted_images and not st.session_state.api_key_exists) or st.session_state.upload_more_images:
     if (st.session_state.submitted_api_key and not st.session_state.has_submitted_images and not st.session_state.api_key_exists):
         st.session_state.display_uploader_page = True
-        #image_upload_page()
         
     
     if st.session_state.has_submitted_images or st.session_state.api_key_exists:
@@ -314,7 +314,7 @@ def main():
                         st.session_state.all_descriptions_generated = True
             else:
                 st.session_state.all_descriptions_generated = True
-        #if st.session_state.show_retrieval_page:
+
         if st.session_state.all_descriptions_generated:
             retrieval_page()
 
@@ -325,7 +325,6 @@ def main():
 #APP START POINT
 if 'submitted_api_key' not in st.session_state:
     st.session_state.submitted_api_key = False
-    #st.session_state.user_openai_api_key = ""?
 
 if 'api_key_exists' not in st.session_state:
     st.session_state.api_key_exists = False

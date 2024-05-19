@@ -123,10 +123,8 @@ def reduce_png_quality(file_path, output_path, quality_level=50, max_size=_5_MB,
     first attempt with Image.save(), then use Image.resize()
     """
     file_size = os.path.getsize(file_path)
-    print("file size: {}".format(file_size))
 
     if file_size < max_size:
-        print('already under max size')
         return
     name = os.path.basename(file_path)
     try:
