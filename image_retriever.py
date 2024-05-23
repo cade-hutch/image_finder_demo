@@ -16,7 +16,7 @@ MODELS = [
     "gpt-3.5-turbo-0125",
     "gpt-4-turbo",
     "gpt-4",
-    #"gpt-4-1106-preview", *Most used
+    "gpt-4-1106-preview", #*Most used
     #'gpt-4-turbo-2024-04-09', same as base turbo?
     "gpt-4o"
 ]
@@ -85,7 +85,7 @@ def handle_faulty_response_format(res):
 def rephrase_prompt(api_key, orig_prompt):
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
+        model=MODELS[0],
         messages=[
             {"role": "system", "content": ("You are an assistant for rephrasing image search prompts. You need to convert queries for images that are in form of statements into equivalent questions.\n"
                                             "#RULES:\n"

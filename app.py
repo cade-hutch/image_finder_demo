@@ -117,7 +117,7 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
             with open(file_path, "wb") as f:
                 f.write(uploaded_img.getbuffer())
 
-            reduce_png_quality(file_path, file_path)
+            reduce_png_quality(file_path, file_path)#TODO: move this before db upload
         #TODO: One succuess bar, add images while looping?
         #TODO: reduce png quality here before db uploading
         st.success(f"Images saved.....Uploading to Databsae")
