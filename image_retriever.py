@@ -21,6 +21,22 @@ MODELS = [
     "gpt-4o"
 ]
 
+
+def get_prompt(image_descriptions, option=0):
+    if option == 0:
+        return (f"You are an assistant for finding image file names based on the associated image descriptions given for each photo."
+                f"Here are image filenames as keys and corresponding image descriptions as values in JSON format: {image_descriptions}"
+                "The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo."
+                "For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description."
+                "Provide your answer as a list of strings. Simply provide the desired output list, do not include additional explanation. If there are no valid answer, simply output 'None'.")
+    if option == 1:
+        return (f"You are an assistant for finding image file names based on the associated image descriptions given for each photo."
+                f"Here are image filenames as keys and corresponding image descriptions as values in JSON format: {image_descriptions}"
+                "The user will input a brief description that will match one or multiple of the provided full descriptions. You are to output the filename(s) whose description best match the user given description."
+                "For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description."
+                "Provide your answer as a list of strings. Simply provide the desired output list, do not include additional explanation. If there are no valid answer, simply output 'None'.")
+
+
 def retrieve_contents_from_json(json_file_path):
     try:
         with open(json_file_path, 'r') as file:
@@ -132,7 +148,7 @@ def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, 
     print(res)
 
 
-def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=True, return_rephrase=False):
+def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=False, return_rephrase=False):
     client = OpenAI(api_key=api_key)
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)
     req_start_time = time.perf_counter()
@@ -144,13 +160,9 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
         print(f"PROMPT REPHRASED: {retrieval_prompt}")
 
     response = client.chat.completions.create(
-        model=MODELS[4],
+        model=MODELS[0],
         messages=[
-            {"role": "system", "content": (f"You are an assistant for finding image file names based on the associated image descriptions given for each photo."
-                                            f"Here are image filenames as keys and corresponding image descriptions as values in JSON format: {image_descriptions}"
-                                            "The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo."
-                                            "For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description."
-                                            "Provide your answer as a list of strings. Simply provide the desired output list, do not include additional explanation. If there are no valid answer, simply output 'None'.")},
+            {"role": "system", "content": get_prompt(image_descriptions, option=1)},
             {"role": "user", "content": f"{retrieval_prompt}"},
         ]
     )
