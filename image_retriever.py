@@ -85,7 +85,7 @@ def handle_faulty_response_format(res):
 def rephrase_prompt(api_key, orig_prompt):
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
-        model=MODELS[0],
+        model=MODELS[4],
         messages=[
             {"role": "system", "content": ("You are an assistant for rephrasing image search prompts. You need to convert queries for images that are in form of statements into equivalent questions.\n"
                                             "#RULES:\n"
@@ -144,7 +144,7 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
         print(f"PROMPT REPHRASED: {retrieval_prompt}")
 
     response = client.chat.completions.create(
-        model=MODELS[0],
+        model=MODELS[4],
         messages=[
             {"role": "system", "content": (f"You are an assistant for finding image file names based on the associated image descriptions given for each photo."
                                             f"Here are image filenames as keys and corresponding image descriptions as values in JSON format: {image_descriptions}"
@@ -164,9 +164,9 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
         output_images = ast.literal_eval(res)
         print("literal_eval:", output_images)
     except ValueError:
-        print("ValueError: The input is not a valid Python literal.")
+        print("ValueError: The response is not a valid Python literal.")
     except SyntaxError:
-        print("SyntaxError: The input string contains a syntax error.")
+        print("SyntaxError: The response string contains a syntax error.")
         formatted_output = handle_faulty_response_format(res)
         print(type(res))
         print(res)
