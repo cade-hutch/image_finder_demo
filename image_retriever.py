@@ -119,35 +119,6 @@ def rephrase_prompt(api_key, orig_prompt):
     return new_prompt
 
 
-#TODO: remove this
-def retrieve_and_explain(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=False):
-    client = OpenAI(api_key=api_key)
-    image_descriptions = retrieve_contents_from_json(image_descriptions_file)
-    req_start_time = time.perf_counter()
-    if rephrase:
-        retrieval_prompt = rephrase_prompt(api_key, retrieval_prompt)
-        print(f"PROMPT REPHRASED: {retrieval_prompt}")
-    print('-----')
-
-    response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
-        messages=[
-            {"role": "system", "content": """You are an assistant for finding image file names based on the associated image descriptions given for each photo.
-                                            Here are image filenames as keys and corresponding image descriptions as values in JSON format: {}
-
-                                            The user will ask you for names of one or multiple photos that match a description. You are to output the filename(s) based on the interpreting the respective description given for each photo.
-
-                                            For example, if a user asks you for the file names of pcitures that have animals in them, find and output all image file names that contain a reference to an animal in their description.
-                                            For each image you output, provide a justification for choosing it.
-                                        """.format(image_descriptions)},
-            {"role": "user", "content": f"{retrieval_prompt}"},
-        ]
-    )
-    res = response.choices[0].message.content
-    res = res.replace("'", "\"")
-    print(res)
-
-
 def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, api_key, rephrase=False, return_rephrase=False):
     client = OpenAI(api_key=api_key)
     image_descriptions = retrieve_contents_from_json(image_descriptions_file)
@@ -195,7 +166,6 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
         print('got output as string instead of list')
         output_images = [output_images]
 
-    t_log_s = time.perf_counter()
     #store to logs
     logging_entry = create_logging_entry(retrieval_prompt_orig, retrieval_prompt, output_images, str(res_raw))
     #firebase upload single
