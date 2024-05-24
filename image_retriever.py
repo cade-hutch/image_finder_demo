@@ -204,9 +204,7 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
     #local append to JSON file
     logging_file = os.path.join(LOGS_DIR, api_key[-5:] + '_logs.json')
     store_logging_entry(logging_file, logging_entry)
-    t_log_e = time.perf_counter()
-    print(f'logging time: {round(t_log_e - t_log_s, 4)}')
-    retrieval_prompt
+
     if return_rephrase:
         return retrieval_prompt, output_images
     else:
