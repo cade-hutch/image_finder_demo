@@ -32,9 +32,9 @@ def get_prompt(image_descriptions, option=0):
     if option == 1:
         return (f"You are an assistant for finding image file names based on the associated image descriptions given for each photo."
                 f"Here are image filenames as keys and corresponding image descriptions as values in JSON format: {image_descriptions}"
-                "The user will input a brief description that will match one or multiple of the provided full descriptions. You are to output the filename(s) whose description best match the user given description."
+                "The user will input a brief description that will match one or multiple of the provided full descriptions. You are to output the filename(s) whose descriptions best match the user given description."
                 "For example, if a user asks you for the file names of pictures that have animals in them, find and output all picture file names that contain a reference to an animal in their description."
-                "Provide your answer as a list of strings. Simply provide the desired output list, do not include additional explanation. If there are no valid answer, simply output 'None'.")
+                "Provide your answer as a list of strings. Simply provide the desired output list, do not include additional explanation. If there are no valid answers, simply output 'None'.")
 
 
 def retrieve_contents_from_json(json_file_path):
@@ -131,7 +131,7 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
         print(f"PROMPT REPHRASED: {retrieval_prompt}")
 
     response = client.chat.completions.create(
-        model=MODELS[0],
+        model=MODELS[4],
         messages=[
             {"role": "system", "content": get_prompt(image_descriptions, option=1)},
             {"role": "user", "content": f"{retrieval_prompt}"},
