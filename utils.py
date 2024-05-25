@@ -325,11 +325,14 @@ def remove_description_pretenses_in_file(descr_file, output_file):
 
 
 #embeddings utils
-def add_new_descr_to_embedding_pickle(embeddings_obj, pickle_file, descriptions):
+def add_new_descr_to_embedding_pickle(embeddings_obj, pickle_file, descriptions, create_new=False):
     #one or multiple descr
     #NOTE: np array additions must have same amount of columns(1536)
-    with open(pickle_file, 'rb') as file:
-        existing_embeddings = pickle.load(file)
+    if not create_new:
+        with open(pickle_file, 'rb') as file:
+            existing_embeddings = pickle.load(file)
+    else:
+        existing_embeddings = []
     print(len(existing_embeddings))
     if type(descriptions) == str:
         descriptions = [descriptions]
@@ -339,7 +342,10 @@ def add_new_descr_to_embedding_pickle(embeddings_obj, pickle_file, descriptions)
         new_rows.append(new_row)
 
     new_rows = np.array(new_rows).astype('float32')
-    new_embeddings = np.vstack((existing_embeddings, new_rows))
+    if create_new:
+        new_embeddings = new_rows
+    else:
+        new_embeddings = np.vstack((existing_embeddings, new_rows))
 
     with open(pickle_file, 'wb') as file:
         pickle.dump(new_embeddings, file)
@@ -363,7 +369,7 @@ def create_and_store_embeddings_to_pickle(embeddings_obj, pickle_file, descripti
         pickle.dump(embeddings_list, file)
 
 
-def get_embeddings_from_pickle_file(pickle_file):
+def get_embeddings_from_pickle_file(pickle_file):        
     with open(pickle_file, 'rb') as file:
         embeddings_list = pickle.load(file)
     return embeddings_list
@@ -371,11 +377,16 @@ def get_embeddings_from_pickle_file(pickle_file):
 
 def query_for_related_descriptions(api_key, query, embeddings_pickle_file, images_dir, k=10):
     json_descr_filepath = get_descr_filepath(images_dir)
-    file_names, descriptions = get_descriptions_from_json(json_descr_filepath, get_images=True)
+    json_dict = retrieve_contents_from_json(json_descr_filepath)
+    file_names = list(json_dict.keys())
+    descriptions = list(json_dict.values())
+    embeddings_obj = OpenAIEmbeddings(api_key=api_key)
+    if not os.path.exists(embeddings_pickle_file):
+        add_new_descr_to_embedding_pickle(embeddings_obj, embeddings_pickle_file, descriptions, create_new=True)
+
     if k == 0:
         k = len(file_names)
 
-    embeddings_obj = OpenAIEmbeddings(api_key=api_key)
     embeddings_list = get_embeddings_from_pickle_file(embeddings_pickle_file)
     index = faiss.IndexFlatL2(1536)
     index.add(embeddings_list)
@@ -387,7 +398,7 @@ def query_for_related_descriptions(api_key, query, embeddings_pickle_file, image
 
     images_ranked = np.array(file_names)[indices]
     search_ouput = np.array(descriptions)[indices]
-    print(search_ouput)
+    #print(search_ouput)
     print(images_ranked)
     return images_ranked
 
