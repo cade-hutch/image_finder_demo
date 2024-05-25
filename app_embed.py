@@ -5,6 +5,7 @@ import time
 import numpy as np
 import streamlit as st
 import subprocess
+from PIL import Image
 
 from image_retriever import retrieve_and_return
 from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, create_embeddings, update_embeddings, find_new_pic_files
@@ -108,6 +109,13 @@ def user_folder_exists_remote(api_key):
     else:
         print('exists_remote: False')
         return False
+
+
+def resize_image(image, fixed_height=200):
+    width, height = image.size
+    aspect_ratio = width / height
+    new_width = int(fixed_height * aspect_ratio)
+    return image.resize((new_width, fixed_height))
 
 
 def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True):
@@ -247,14 +255,28 @@ def retrieval_page():
     remaining_images = [img for img in st.session_state.all_images if img not in st.session_state.search_result_images]
     for i in range(0, len(remaining_images), 4):
         col1, col2, col3, col4 = st.columns(4)
-        col1.image(remaining_images[i], use_column_width=True)
+
+        i1 = Image.open(remaining_images[i])
+        col1.image(resize_image(i1), use_column_width=True)
         
         if i + 1 < len(remaining_images):
-            col2.image(remaining_images[i+1], use_column_width=True)
+            i2 = Image.open(remaining_images[i+1])
+            col2.image(resize_image(i2), use_column_width=True)
         if i + 2 < len(remaining_images):
-            col3.image(remaining_images[i+2], use_column_width=True)
+            i3 = Image.open(remaining_images[i+2])
+            col3.image(resize_image(i3), use_column_width=True)
         if i + 3 < len(remaining_images):
-            col4.image(remaining_images[i+3], use_column_width=True)
+            i4 = Image.open(remaining_images[i+3])
+            col4.image(resize_image(i4), use_column_width=True)
+
+        # col1.image(remaining_images[i], use_column_width=True)
+        
+        # if i + 1 < len(remaining_images):
+        #     col2.image(remaining_images[i+1], use_column_width=True)
+        # if i + 2 < len(remaining_images):
+        #     col3.image(remaining_images[i+2], use_column_width=True)
+        # if i + 3 < len(remaining_images):
+        #     col4.image(remaining_images[i+3], use_column_width=True)
 
     if place_top_cols:
         top_result1 = st.session_state.images_ranked[0]
