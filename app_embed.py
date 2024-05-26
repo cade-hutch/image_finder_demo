@@ -19,6 +19,8 @@ JSON_DESCR_SUFFIX = '_descriptions.json'
 IMAGE_BASE_DIR = os.path.join(MAIN_DIR, 'image_base')
 EMBEDDINGS_DIR = os.path.join(MAIN_DIR, 'embeddings')
 
+FIXED_WIDTH = 300
+FIXED_HEIGHT = 400
 
 
 def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only once, rest of function checks completion to be ran repitative until processe complete
@@ -111,6 +113,23 @@ def user_folder_exists_remote(api_key):
         return False
 
 
+def resize_and_crop_image(image, fixed_width=FIXED_WIDTH, max_height=FIXED_HEIGHT):
+    width, height = image.size
+    aspect_ratio = height / width
+    new_height = int(fixed_width * aspect_ratio)
+    
+    # Resize the image to the fixed width while maintaining aspect ratio
+    resized_image = image.resize((fixed_width, new_height))
+    
+    # Crop the image if its height exceeds the max height
+    if new_height > max_height:
+        top = (new_height - max_height) // 2
+        bottom = top + max_height
+        resized_image = resized_image.crop((0, top, fixed_width, bottom))
+    
+    return resized_image
+
+
 def resize_image(image, fixed_height=200):
     width, height = image.size
     aspect_ratio = width / height
@@ -183,9 +202,6 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
             embeddings_time = round(t_end_embeddings - t_start_embeddings, 2)
             st.success(f"Finished generating embeddings in {embeddings_time} seconds")
 
-            
-            
-
             #FIREBASE - STORE JSON
             print('starting json upload')
             
@@ -247,27 +263,34 @@ def retrieval_page():
     #for i in range(0, len(images_to_display), 2):
     for i in range(0, len(st.session_state.search_result_images), 2):
         col1, col2 = st.columns(2)
-        col1.image(st.session_state.search_result_images[i], use_column_width=True)
+        res_img = resize_and_crop_image(Image.open(st.session_state.search_result_images[i]))
+        col1.image(res_img, use_column_width=True, caption="top result")
         
         if i + 1 < len(st.session_state.search_result_images): #TODO: handle when appending non results
-            col2.image(st.session_state.search_result_images[i+1], use_column_width=True)
+            res_img = resize_and_crop_image(Image.open(st.session_state.search_result_images[i+1]))
+            col2.image(res_img, use_column_width=True, caption='top result')
 
+    #display rest of images in ranked order
     remaining_images = [img for img in st.session_state.all_images if img not in st.session_state.search_result_images]
     for i in range(0, len(remaining_images), 4):
         col1, col2, col3, col4 = st.columns(4)
 
         i1 = Image.open(remaining_images[i])
-        col1.image(resize_image(i1), use_column_width=True)
+        resized_i1 = resize_and_crop_image(i1)
+        col1.image(resized_i1, use_column_width=True)
         
         if i + 1 < len(remaining_images):
             i2 = Image.open(remaining_images[i+1])
-            col2.image(resize_image(i2), use_column_width=True)
+            resized_i2 = resize_and_crop_image(i2)
+            col2.image(resized_i2, use_column_width=True)
         if i + 2 < len(remaining_images):
             i3 = Image.open(remaining_images[i+2])
-            col3.image(resize_image(i3), use_column_width=True)
+            resized_i3 = resize_and_crop_image(i3)
+            col3.image(resized_i3, use_column_width=True)
         if i + 3 < len(remaining_images):
             i4 = Image.open(remaining_images[i+3])
-            col4.image(resize_image(i4), use_column_width=True)
+            resized_i4 = resize_and_crop_image(i4)
+            col4.image(resized_i4, use_column_width=True)
 
         # col1.image(remaining_images[i], use_column_width=True)
         
@@ -278,13 +301,13 @@ def retrieval_page():
         # if i + 3 < len(remaining_images):
         #     col4.image(remaining_images[i+3], use_column_width=True)
 
-    if place_top_cols:
-        top_result1 = st.session_state.images_ranked[0]
-        top_result2 = st.session_state.images_ranked[1]
-        tr1_path = os.path.join(st.session_state.images_dir, top_result1)
-        tr2_path = os.path.join(st.session_state.images_dir, top_result2)
-        top_col1.image(tr1_path, use_column_width=True, caption='a')
-        top_col2.image(tr2_path, use_column_width=True, caption='b')
+    # if place_top_cols:
+    #     top_result1 = st.session_state.images_ranked[0]
+    #     top_result2 = st.session_state.images_ranked[1]
+    #     tr1_path = os.path.join(st.session_state.images_dir, top_result1)
+    #     tr2_path = os.path.join(st.session_state.images_dir, top_result2)
+        #top_col1.image(tr1_path, use_column_width=True, caption='a')
+        #top_col2.image(tr2_path, use_column_width=True, caption='b')
 
 
 def main():
