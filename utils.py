@@ -14,6 +14,7 @@ from langchain_community.embeddings import OpenAIEmbeddings
 
 _10_MB = 10*1024*1024
 _5_MB = 5*1024*1024
+_3_MB = 3*1024*1024
 
 def is_valid_image_directory(images_dir_path):
     is_dir = os.path.isdir(images_dir_path)
@@ -117,7 +118,7 @@ def validate_openai_api_key(openai_api_key):
 
 
 #faster(6 seconds vs)
-def reduce_png_quality(file_path, output_path, quality_level=50, max_size=_5_MB, scale_factor=0.6):
+def reduce_png_quality(file_path, output_path, quality_level=50, max_size=_3_MB, scale_factor=0.6):
     """
     Reduces the quality of a PNG file.
     first attempt with Image.save(), then use Image.resize()
