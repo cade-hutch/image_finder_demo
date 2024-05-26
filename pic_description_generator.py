@@ -20,8 +20,8 @@ def headers(api_key):
 
 def default_payload(image_question):
   return {
-    "model": "gpt-4-turbo",
-    #"model": "gpt-4o",
+    #"model": "gpt-4-turbo",
+    "model": "gpt-4o",
     "messages": [
       {
         "role": "user",
