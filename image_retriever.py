@@ -22,7 +22,7 @@ MODELS = [
 ]
 
 
-def get_prompt(image_descriptions, option=0):
+def get_prompt(image_descriptions, option=1):
     if option == 0:
         return (f"You are an assistant for finding image file names based on the associated image descriptions given for each photo."
                 f"Here are image filenames as keys and corresponding image descriptions as values in JSON format: {image_descriptions}"
