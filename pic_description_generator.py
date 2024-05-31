@@ -163,6 +163,8 @@ def rename_files_in_directory(directory_path):
 
         if os.path.isfile(file_path):
             new_filename = filename.replace(' ', '_')
+            if 'IMG' not in new_filename.upper():
+                new_filename = new_filename[-10:]
             new_file_path = os.path.join(directory_path, new_filename)
 
             # Rename the file
@@ -256,3 +258,9 @@ def handle_embeddings(api_key, base_name, new_descriptions, json_description_fil
         create_and_store_embeddings_to_pickle(embeddings_obj, pickle_file, descriptions)
     end_time_pickle = time.perf_counter()
     print(f"finished creating/adding embeddings in {round(end_time_pickle - start_time_pickle, 2)}")
+
+
+if __name__ == '__main__':
+    ...
+    #d = ''
+    #rename_files_in_directory(d)

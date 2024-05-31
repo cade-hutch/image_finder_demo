@@ -12,6 +12,9 @@ from openai import OpenAI
 from langchain_community.embeddings import OpenAIEmbeddings
 
 
+MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
+EMBEDDINGS_DIR = os.path.join(MAIN_DIR, 'embeddings')
+
 _10_MB = 10*1024*1024
 _5_MB = 5*1024*1024
 _3_MB = 3*1024*1024
@@ -84,7 +87,7 @@ def get_descriptions_from_json(json_description_file_path, get_images=False):
 
 
 def retrieve_contents_from_json(json_file_path):
-    #return list of dicts(keys = filename, descr)
+    #return list of dicts(keys = filename, value = descr)
     try:
         with open(json_file_path, 'r') as file:
             data = json.load(file)
@@ -204,7 +207,6 @@ def reduce_png_directory(image_dir, max_size=_5_MB, fast=True):
     else:
         with ThreadPoolExecutor() as executor:
             executor.map(resize_image, img_paths, [image_dir] * len(img_paths))
-
 
 
 def validate_openai_api_key(openai_api_key):
@@ -370,15 +372,78 @@ def create_and_store_embeddings_to_pickle(embeddings_obj, pickle_file, descripti
         pickle.dump(embeddings_list, file)
 
 
-def get_embeddings_from_pickle_file(pickle_file):        
+def get_embeddings_from_pickle_file(pickle_file):
     with open(pickle_file, 'rb') as file:
         embeddings_list = pickle.load(file)
     return embeddings_list
 
 
+def rank_and_filter_descriptions(api_key, descriptions_dict, prompt, filter=1.0):
+    """
+    helper function for retrieve_and_return. get descriptions dictionary from descriptions json file.
+    """
+    if filter > 1.0 or filter <= 0.0:
+        filter = 1
+    #t_s = time.perf_counter()
+    pickle_file = os.path.join(EMBEDDINGS_DIR, api_key[-5:] + ".pkl")
+    if not os.path.exists(pickle_file):
+        assert False, "rank_and_filter_descriptions: no pickle file "
+    
+    #embeddings search -> return top percentage of ranked descriptions based on filter value
+    filtered_images = query_and_filter(api_key, pickle_file, descriptions_dict, prompt, filter)[0]
+    filtered_descr_dict = dict()
+    for img in list(filtered_images):
+        filtered_descr_dict[img] = descriptions_dict[img]
+    #t_e = time.perf_counter()
+    #print(f'embed time: {t_e - t_s}')
+    return filtered_descr_dict
+    #TODO: still need to return iin ranked form -> cant use dictionary
+    #filterd_descriptions = []
+
+
+def get_top_query_result(api_key, descriptions_file, prompt, filter=1.0):
+    """
+    helper function for retrieve_and_return. get descriptions dictionary from descriptions json file.
+    """
+    descriptions_dict = retrieve_contents_from_json(descriptions_file)
+    if filter > 1.0 or filter <= 0.0:
+        filter = 1
+    #t_s = time.perf_counter()
+    pickle_file = os.path.join(EMBEDDINGS_DIR, api_key[-5:] + ".pkl")
+    if not os.path.exists(pickle_file):
+        assert False, "rank_and_filter_descriptions: no pickle file "
+    
+    #embeddings search -> return top percentage of ranked descriptions based on filter value
+    filtered_images = query_and_filter(api_key, pickle_file, descriptions_dict, prompt, filter)[0]
+    return [filtered_images[0]]
+
+def query_and_filter(api_key, embeddings_pickle_file, descriptions_dict, query, filter):
+    file_names = list(descriptions_dict.keys())
+    descriptions = list(descriptions_dict.values())
+    embeddings_obj = OpenAIEmbeddings(api_key=api_key)
+
+    k = int(len(descriptions) * filter)
+    embeddings_list = get_embeddings_from_pickle_file(embeddings_pickle_file)
+    index = faiss.IndexFlatL2(1536)
+    index.add(embeddings_list)
+
+    query_embedding = embeddings_obj.embed_query(query)
+    query_embedding = np.array([query_embedding]).astype('float32')
+
+    distances, indices = index.search(query_embedding, k)
+
+    images_ranked = np.array(file_names)[indices]
+    search_ouput = np.array(descriptions)[indices]
+    #print(search_ouput)
+    #print(images_ranked)
+    return images_ranked
+
+
 def query_for_related_descriptions(api_key, query, embeddings_pickle_file, images_dir, k=10):
+
     json_descr_filepath = get_descr_filepath(images_dir)
     json_dict = retrieve_contents_from_json(json_descr_filepath)
+    
     file_names = list(json_dict.keys())
     descriptions = list(json_dict.values())
     embeddings_obj = OpenAIEmbeddings(api_key=api_key)

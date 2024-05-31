@@ -101,7 +101,8 @@ def handle_faulty_response_format(res):
 def rephrase_prompt(api_key, orig_prompt):
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
-        model=MODELS[4],
+        #REPHRASE************************
+        model=MODELS[0], #*******REPHRASE
         messages=[
             {"role": "system", "content": ("You are an assistant for rephrasing image search prompts. You need to convert queries for images that are in form of statements into equivalent questions.\n"
                                             "#RULES:\n"
@@ -131,7 +132,7 @@ def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, a
         print(f"PROMPT REPHRASED: {retrieval_prompt}")
 
     response = client.chat.completions.create(
-        model=MODELS[4],
+        model=MODELS[0],
         messages=[
             {"role": "system", "content": get_prompt(image_descriptions, option=1)},
             {"role": "user", "content": f"{retrieval_prompt}"},
