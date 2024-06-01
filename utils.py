@@ -417,6 +417,7 @@ def get_top_query_result(api_key, descriptions_file, prompt, filter=1.0):
     filtered_images = query_and_filter(api_key, pickle_file, descriptions_dict, prompt, filter)[0]
     return [filtered_images[0]]
 
+
 def query_and_filter(api_key, embeddings_pickle_file, descriptions_dict, query, filter):
     file_names = list(descriptions_dict.keys())
     descriptions = list(descriptions_dict.values())
@@ -463,7 +464,7 @@ def query_for_related_descriptions(api_key, query, embeddings_pickle_file, image
     distances, indices = index.search(query_embedding, k)
 
     images_ranked = np.array(file_names)[indices]
-    search_ouput = np.array(descriptions)[indices]
+    #search_ouput = np.array(descriptions)[indices] NOTE: for looking at ranking results
     #print(search_ouput)
     #print(images_ranked)
     return images_ranked

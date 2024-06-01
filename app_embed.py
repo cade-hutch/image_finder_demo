@@ -58,13 +58,13 @@ def send_request(prompt):
             base_name = os.path.basename(images_dir)
             base_dir = os.path.dirname(os.path.dirname(images_dir))
             descriptions_folder_path = os.path.join(base_dir, 'json')
-            json_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
+            json_file_path = os.path.join(descriptions_folder_path, base_name + JSON_DESCR_SUFFIX)
             if not os.path.exists(json_file_path):
                 print('descriptions file not found, getting from firebase')
                 download_descr_file(json_file_path)
 
             start_t = time.perf_counter()
-            output_image_names = retrieve_and_return(images_dir, json_file_path, prompt, st.session_state.user_openai_api_key)
+            output_image_names = retrieve_and_return(json_file_path, prompt, st.session_state.user_openai_api_key)
             end_t = time.perf_counter()
 
             #print('RESPONSE RECEIVED')
@@ -90,7 +90,7 @@ def create_image_dir_name(api_key):
 
 
 def user_folder_exists_local(api_key):
-    folder_name = api_key[-5:]#create_image_dir_name
+    folder_name = create_image_dir_name(api_key)
     curr_dir = os.path.dirname(os.path.realpath(__file__))
     image_base_dir = os.path.join(curr_dir, 'image_base')
     for f in os.listdir(image_base_dir):
@@ -103,7 +103,7 @@ def user_folder_exists_local(api_key):
 
 
 def user_folder_exists_remote(api_key):
-    folder_name = api_key[-5:]
+    folder_name = create_image_dir_name(api_key)
     print('running user_folder_exists')
     if does_image_folder_exist(folder_name):
         print('exists_remote: True')
@@ -118,10 +118,10 @@ def resize_and_crop_image(image, fixed_width=FIXED_WIDTH, max_height=FIXED_HEIGH
     aspect_ratio = height / width
     new_height = int(fixed_width * aspect_ratio)
     
-    # Resize the image to the fixed width while maintaining aspect ratio
+    #resize the image to the fixed width while maintaining aspect ratio
     resized_image = image.resize((fixed_width, new_height))
     
-    # Crop the image if its height exceeds the max height
+    #crop the image if its height exceeds the max height
     if new_height > max_height:
         top = (new_height - max_height) // 2
         bottom = top + max_height
@@ -405,55 +405,58 @@ def main():
             retrieval_page()
 
 
-#app start point
-if 'firebase_init' not in st.session_state:
-    print('initing app')
-    st.session_state.firebase_init = True
-    init_app()
+def make_st_vars():
+    #app start point
+    if 'firebase_init' not in st.session_state:
+        print('initing app')
+        st.session_state.firebase_init = True
+        init_app()
 
-if 'submitted_api_key' not in st.session_state:
-    st.session_state.submitted_api_key = False
-    #st.session_state.user_openai_api_key = ""?
+    if 'submitted_api_key' not in st.session_state:
+        st.session_state.submitted_api_key = False
+        #st.session_state.user_openai_api_key = ""?
 
-if 'api_key_exists' not in st.session_state:
-    st.session_state.api_key_exists = False
+    if 'api_key_exists' not in st.session_state:
+        st.session_state.api_key_exists = False
 
-if 'has_submitted_images' not in st.session_state:
-    st.session_state.has_submitted_images = False
+    if 'has_submitted_images' not in st.session_state:
+        st.session_state.has_submitted_images = False
 
-if 'uploaded_images' not in st.session_state: #TODO: unused
-    st.session_state.uploaded_images = []
+    if 'uploaded_images' not in st.session_state: #TODO: unused
+        st.session_state.uploaded_images = []
 
-if 'upload_more_images' not in st.session_state: #TODO: unused
-    st.session_state.upload_more_images = False
+    if 'upload_more_images' not in st.session_state: #TODO: unused
+        st.session_state.upload_more_images = False
 
-if 'history' not in st.session_state:
-    st.session_state.history = []
+    if 'history' not in st.session_state:
+        st.session_state.history = []
 
-if 'all_images' not in st.session_state:
-    st.session_state.all_images = []
+    if 'all_images' not in st.session_state:
+        st.session_state.all_images = []
 
-if 'images_dir' not in st.session_state:
-    st.session_state.images_dir = ""
-elif os.path.exists(st.session_state.images_dir):
-    st.session_state.all_images = []
-    for img in os.listdir(st.session_state.images_dir):
-        if img.endswith('.png'):
-            st.session_state.all_images.append(os.path.join(st.session_state.images_dir, img))
+    if 'images_dir' not in st.session_state:
+        st.session_state.images_dir = ""
+    elif os.path.exists(st.session_state.images_dir):
+        st.session_state.all_images = []
+        for img in os.listdir(st.session_state.images_dir):
+            if img.endswith('.png'):
+                st.session_state.all_images.append(os.path.join(st.session_state.images_dir, img))
 
-if 'images_ranked' not in st.session_state:
-    st.session_state.images_ranked  = []
+    if 'images_ranked' not in st.session_state:
+        st.session_state.images_ranked  = []
 
-if 'all_descriptions_generated' not in st.session_state:
-    st.session_state.all_descriptions_generated = False
+    if 'all_descriptions_generated' not in st.session_state:
+        st.session_state.all_descriptions_generated = False
 
-if 'display_infobar_for_existing_images' not in st.session_state:
-    st.session_state.display_infobar_for_existing_images = True
+    if 'display_infobar_for_existing_images' not in st.session_state:
+        st.session_state.display_infobar_for_existing_images = True
 
-if 'show_retrieval_page' not in st.session_state:
-    st.session_state.show_retrieval_page = True
+    if 'show_retrieval_page' not in st.session_state:
+        st.session_state.show_retrieval_page = True
 
-if 'search_result_images' not in st.session_state:
-    st.session_state.search_result_images = []
+    if 'search_result_images' not in st.session_state:
+        st.session_state.search_result_images = []
 
+
+make_st_vars()
 main()

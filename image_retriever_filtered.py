@@ -18,8 +18,8 @@ MODELS = [
     "gpt-4-turbo",
     "gpt-4",
     "gpt-4-1106-preview", #*Most used
-    #'gpt-4-turbo-2024-04-09', same as base turbo?
     "gpt-4o"
+    #'gpt-4-turbo-2024-04-09', same as base turbo?
 ]
 
 
@@ -88,37 +88,10 @@ def handle_faulty_response_format(res):
         return parsed_list
         
     print("handle faulty response attempted")
-    #TODO: add other faulty formats
     return res_list
 
 
-def rephrase_prompt(api_key, orig_prompt):
-    client = OpenAI(api_key=api_key)
-    response = client.chat.completions.create(
-        model=MODELS[4],
-        messages=[
-            {"role": "system", "content": ("You are an assistant for rephrasing image search prompts. You need to convert queries for images that are in form of statements into equivalent questions.\n"
-                                            "#RULES:\n"
-                                            "- Your output should only be the converted prompt, nothing extra.\n"
-                                            "- If the input is already in question form, improve it to be better suited for a search query.\n"
-                                            "- Try to remove possessive pronouns and replace with generic determiners.\n"
-                                            "#EXAMPLES:\n"
-                                            "- If the input is 'animals', your output should be 'What images contain animals?'.\n"
-                                            "- If the input is 'My family on Christmas', your output should be 'What images contain a family on Christmas?'.\n"
-                                            "- If the input is 'Graduation pics', your output should be 'What images are related to graduation?'.\n")},
-            {"role": "user", "content": "Based on the given rules and examples, please rephrase the following: {}".format(orig_prompt)},
-        ]
-    )
-    new_prompt = response.choices[0].message.content
-    return new_prompt
-
-
-def embeddings_filter():
-    ...
-
-
-#def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, api_key, filter=0.1, rephrase=False, return_rephrase=False):
-def retrieve_and_return(images_dir, image_descriptions_file, retrieval_prompt, api_key, filter=0.1, return_filter=False):
+def retrieve_and_return(image_descriptions_file, retrieval_prompt, api_key, filter=0.1, return_filter=False):
     #TODO: remove uneeded images_dir from args
     client = OpenAI(api_key=api_key)
     image_descriptions: dict = retrieve_contents_from_json(image_descriptions_file)
