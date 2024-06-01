@@ -7,7 +7,7 @@ import streamlit as st
 import subprocess
 from PIL import Image
 
-from image_retriever import retrieve_and_return
+from image_retriever_filtered import retrieve_and_return
 from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, create_embeddings, update_embeddings, find_new_pic_files
 from utils import validate_openai_api_key, get_image_count, get_descr_filepath, query_for_related_descriptions
 #TODO: state for importing so firebase only inits once??
@@ -42,8 +42,8 @@ def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only 
 
 def send_request(prompt):
     # Your function to send and receive data from an API
-    print('-----')
-    print('SEND REQUEST CALLED')
+    #print('-----')
+    #print('SEND REQUEST CALLED')
     print(f"SENDING REQUEST: {prompt}")
     print('-----')
 
@@ -67,7 +67,7 @@ def send_request(prompt):
             output_image_names = retrieve_and_return(images_dir, json_file_path, prompt, st.session_state.user_openai_api_key)
             end_t = time.perf_counter()
 
-            print('RESPONSE RECEIVED')
+            #print('RESPONSE RECEIVED')
             print('output images list:', output_image_names)
             retrieve_time = format(end_t - start_t, '.2f')
 
@@ -243,14 +243,15 @@ def retrieval_page():
         embeddings_pickle_file = os.path.join(EMBEDDINGS_DIR, basename + '.pkl')
         t_start = time.perf_counter()
         images_ranked = query_for_related_descriptions(api_key, user_input, embeddings_pickle_file, images_dir, k=0)
-        print(type(images_ranked))
+        print('\n------------------------------NEW SEARCH------------------------------')
+        #print(type(images_ranked))
         #if images_ranked.any() and len(images_ranked[0]) > 1:
         if len(images_ranked[0]) > 1:
             st.session_state.images_ranked = images_ranked[0].tolist()
             st.session_state.all_images = [os.path.join(st.session_state.images_dir, img) for img in st.session_state.images_ranked]
 
         t_end = time.perf_counter()
-        print(f"embedding ranks took {round(t_end - t_start, 2)} seconds")
+        print(f"Embeddings Ranking Time: {round(t_end - t_start, 2)}s")
         send_request(user_input)
     #NOTE: async works here
     images_to_display = []

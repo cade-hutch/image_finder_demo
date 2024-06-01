@@ -465,7 +465,7 @@ def query_for_related_descriptions(api_key, query, embeddings_pickle_file, image
     images_ranked = np.array(file_names)[indices]
     search_ouput = np.array(descriptions)[indices]
     #print(search_ouput)
-    print(images_ranked)
+    #print(images_ranked)
     return images_ranked
 
 
