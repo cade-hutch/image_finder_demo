@@ -7,9 +7,12 @@ import time
 
 from langchain_community.embeddings import OpenAIEmbeddings
 
-from utils import reduce_png_quality, get_descriptions_from_json, create_and_store_embeddings_to_pickle, add_new_descr_to_embedding_pickle, remove_description_pretense
+from utils import (reduce_png_quality, get_descriptions_from_json, 
+                   create_and_store_embeddings_to_pickle, add_new_descr_to_embedding_pickle,
+                   remove_description_pretense)
 
 IMAGE_QUESTION = 'As descriptive as possible, describe the contents of this image in a single sentence.'
+
 
 def headers(api_key):
   return {

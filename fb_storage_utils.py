@@ -11,7 +11,7 @@ from firebase_admin import credentials, firestore, storage
 from PIL import Image
 
 curr_dir = os.path.dirname(os.path.realpath(__file__))
-keyfile_path = '/Users/cadeh/Desktop/MyCode/Workspace/image_finder_demo/image-finder-demo-firebase-adminsdk-3kvua-934cc33dbb.json'
+keyfile_path = os.path.join(curr_dir, 'image-finder-demo-firebase-adminsdk-3kvua-934cc33dbb.json')
 if os.path.exists(keyfile_path):
     cred_input = keyfile_path
 else:

@@ -19,6 +19,7 @@ _10_MB = 10*1024*1024
 _5_MB = 5*1024*1024
 _3_MB = 3*1024*1024
 
+
 def is_valid_image_directory(images_dir_path):
     is_dir = os.path.isdir(images_dir_path)
     is_all_pngs = are_all_files_png(images_dir_path)
