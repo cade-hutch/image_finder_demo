@@ -1,3 +1,4 @@
+tiktoken
 faiss-cpu==1.7.4
 firebase-admin==6.5.0
 langchain-community==0.0.32
