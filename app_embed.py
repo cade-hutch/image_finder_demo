@@ -19,6 +19,8 @@ JSON_DESCR_SUFFIX = '_descriptions.json'
 IMAGE_BASE_DIR = os.path.join(MAIN_DIR, 'image_base')
 EMBEDDINGS_DIR = os.path.join(MAIN_DIR, 'embeddings')
 
+DEPLOYED_PYTHON_PATH = '/home/adminuser/venv/bin/python'
+
 FIXED_WIDTH = 300
 FIXED_HEIGHT = 400
 
@@ -28,7 +30,7 @@ def sync_local_with_remote(api_key):#TODO: st state to kick off subprocess only 
     json_descr_file = os.path.join(JSON_DESCRITPIONS_DIR, basename + JSON_DESCR_SUFFIX)
     local_images_folder = os.path.join(IMAGE_BASE_DIR, basename)
     print('SYNCING LOCAL WITH REMOTE')
-    process = subprocess.Popen(['python', 'fb_storage_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen([DEPLOYED_PYTHON_PATH, 'fb_storage_utils.py', json_descr_file, local_images_folder], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
 
     # Check if the subprocess ended without errors
