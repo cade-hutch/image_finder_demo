@@ -195,6 +195,7 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
             embeddings_pickle_file = os.path.join(EMBEDDINGS_DIR, image_dir_name + '.pkl')
             t_start_embeddings = time.perf_counter()
             if os.path.exists(embeddings_pickle_file):
+                #TODO: working correctly?
                 update_embeddings(api_key, embeddings_pickle_file, new_descriptions)
             else:
                 create_embeddings(api_key, embeddings_pickle_file, descr_filepath)

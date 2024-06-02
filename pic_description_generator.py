@@ -7,7 +7,7 @@ import time
 
 from langchain_community.embeddings import OpenAIEmbeddings
 
-from utils import (reduce_png_quality, get_descriptions_from_json, 
+from utils import (reduce_png_quality, retrieve_contents_from_json,
                    create_and_store_embeddings_to_pickle, add_new_descr_to_embedding_pickle,
                    remove_description_pretense)
 
@@ -245,25 +245,25 @@ def update_embeddings(api_key, embeddings_pickle_file, new_descriptions):
 def create_embeddings(api_key, embeddings_pickle_file, json_description_file_path):
     print('creating embeddings')
     embeddings_obj = OpenAIEmbeddings(api_key=api_key)
-    descriptions = get_descriptions_from_json(json_description_file_path)
+    descriptions = retrieve_contents_from_json(json_description_file_path)
     create_and_store_embeddings_to_pickle(embeddings_obj, embeddings_pickle_file, descriptions)
 
 
-def handle_embeddings(api_key, base_name, new_descriptions, json_description_file_path):
-    start_time_pickle = time.perf_counter()
-    embeddings_obj = OpenAIEmbeddings(api_key=api_key)
-    embedding_pickles_folder_path = os.path.join(os.path.dirname(os.path.dirname(json_description_file_path)), 'embeddings')
-    pickle_file = os.path.join(embedding_pickles_folder_path, base_name + '.pkl')
-    if os.path.exists(pickle_file):
-        add_new_descr_to_embedding_pickle(embeddings_obj, pickle_file, new_descriptions)
-    else:
-        descriptions = get_descriptions_from_json(json_description_file_path)
-        create_and_store_embeddings_to_pickle(embeddings_obj, pickle_file, descriptions)
-    end_time_pickle = time.perf_counter()
-    print(f"finished creating/adding embeddings in {round(end_time_pickle - start_time_pickle, 2)}")
+# def handle_embeddings(api_key, base_name, new_descriptions, json_description_file_path):
+#     start_time_pickle = time.perf_counter()
+#     embeddings_obj = OpenAIEmbeddings(api_key=api_key)
+#     embedding_pickles_folder_path = os.path.join(os.path.dirname(os.path.dirname(json_description_file_path)), 'embeddings')
+#     pickle_file = os.path.join(embedding_pickles_folder_path, base_name + '.pkl')
+#     if os.path.exists(pickle_file):
+#         add_new_descr_to_embedding_pickle(embeddings_obj, pickle_file, new_descriptions)
+#     else:
+#         descriptions = get_descriptions_from_json(json_description_file_path)
+#         create_and_store_embeddings_to_pickle(embeddings_obj, pickle_file, descriptions)
+#     end_time_pickle = time.perf_counter()
+#     print(f"finished creating/adding embeddings in {round(end_time_pickle - start_time_pickle, 2)}")
 
 
 if __name__ == '__main__':
+    # d = ''
+    # rename_files_in_directory(d)
     ...
-    #d = ''
-    #rename_files_in_directory(d)
