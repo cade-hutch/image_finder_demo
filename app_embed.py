@@ -11,7 +11,8 @@ from image_retriever_filtered import retrieve_and_return
 from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, create_embeddings, update_embeddings, find_new_pic_files
 from utils import validate_openai_api_key, get_image_count, get_descr_filepath, query_for_related_descriptions
 #TODO: state for importing so firebase only inits once??
-from fb_storage_utils import init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist, download_images, get_remote_image_count
+from fb_storage_utils import (init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file,
+                              does_image_folder_exist, upload_embeddings_pkl_file, get_remote_image_count)
 
 MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DESCRITPIONS_DIR = os.path.join(MAIN_DIR, 'json')

@@ -118,6 +118,17 @@ def upload_json_descriptions_file(json_descriptions_file):
         blob.upload_from_filename(json_descriptions_file)
 
 
+def upload_embeddings_pkl_file(pkl_file):
+    """
+    upload embeddings pickle file to firebase
+    """
+    bucket = storage.bucket('image-finder-demo.appspot.com')
+    embeddings_filename = os.path.basename(pkl_file)
+    if pkl_file.endswith((".pkl")):
+        blob = bucket.blob(os.path.join('embeddings', embeddings_filename))
+        blob.upload_from_filename(pkl_file)
+
+
 def get_file_url(filename):
     bucket = storage.bucket('image-finder-demo.appspot.com')
     blob = bucket.blob(filename)
@@ -224,6 +235,10 @@ def download_descr_file(local_descr_filepath):
         if blob.name.endswith(basename):
             blob.download_to_filename(local_descr_filepath)
             return
+
+
+def download_pkl_file(pkl_filepath):
+    ...
 
 
 def fetch_images_as_bytes(blobs):
