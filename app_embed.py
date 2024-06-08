@@ -11,7 +11,7 @@ from image_retriever_filtered import retrieve_and_return
 from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, create_embeddings, update_embeddings, find_new_pic_files
 from utils import validate_openai_api_key, get_image_count, get_descr_filepath, query_for_related_descriptions
 #TODO: state for importing so firebase only inits once??
-from fb_storage_utils import init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist, download_images
+from fb_storage_utils import init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file, does_image_folder_exist, download_images, get_remote_image_count
 
 MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DESCRITPIONS_DIR = os.path.join(MAIN_DIR, 'json')
@@ -77,7 +77,7 @@ def send_request(prompt):
         except:
             print('error during request')
             output_image_names = []
-            st.session_state.history.append(('text', f"Error in image retrieval, try again."))
+            st.session_state.history.append(('text', f"No results, try again."))
         
         st.session_state.search_result_images = []
         for img in output_image_names:
@@ -107,8 +107,17 @@ def user_folder_exists_local(api_key):
 def user_folder_exists_remote(api_key):
     folder_name = create_image_dir_name(api_key)
     print('running user_folder_exists')
+    #TODO: account for db has new pics that local does not
     if does_image_folder_exist(folder_name):
         print('exists_remote: True')
+        # local_folder_path = os.path.join(IMAGE_BASE_DIR, folder_name)
+        # local_img_count = get_image_count(local_folder_path)
+        # remote_img_count = get_remote_image_count(folder_name)
+        # if local_img_count != remote_img_count:
+        #     print(f"image count mismatch {local_img_count}, {remote_img_count}")
+        #     return False
+        # else:
+        #     return True
         return True
     else:
         print('exists_remote: False')
@@ -171,7 +180,8 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
     if generate:
         if not from_uploaded:
             #TODO: needed?
-            rename_files_in_directory(images_dir)
+            ...
+            #rename_files_in_directory(images_dir)
         new_images = get_new_pics_dir(images_dir)
         new_descriptions = []
         api_key = st.session_state.user_openai_api_key
@@ -198,8 +208,10 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
             t_start_embeddings = time.perf_counter()
             if os.path.exists(embeddings_pickle_file):
                 #TODO: working correctly?
+                st.write("Updating Embeddings....")
                 update_embeddings(api_key, embeddings_pickle_file, new_descriptions)
             else:
+                st.write("Generating Embeddings....")
                 create_embeddings(api_key, embeddings_pickle_file, descr_filepath)
             t_end_embeddings = time.perf_counter()
             embeddings_time = round(t_end_embeddings - t_start_embeddings, 2)
@@ -356,6 +368,10 @@ def main():
                 remote_folder_exists = user_folder_exists_remote(user_api_key_input) #firestore folder exists
                 if user_folder_exists_local(user_api_key_input):
                     st.session_state.api_key_exists = True
+                    # if remote_folder_exists:
+                    #     print('before sync2') #TODO: compare image counts here****************************
+                    #     if sync_local_with_remote(user_api_key_input):
+                    #         print('sync 2')
                     #TODO: validate with remote?
                 elif remote_folder_exists:
                     st.session_state.api_key_exists = True

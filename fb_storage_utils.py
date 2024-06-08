@@ -173,6 +173,23 @@ def does_descriptions_file_exist(api_key='', filename=None):
     return False
 
 
+def get_remote_image_count(remote_folder, list_imgs=False):
+    if not remote_folder.startswith('images/'):
+        remote_folder = os.path.join('images', remote_folder)
+
+    bucket = storage.bucket('image-finder-demo.appspot.com')
+    blobs = bucket.list_blobs(prefix=remote_folder)
+
+    if list_imgs:
+        names = [blob.name for blob in blobs if blob.name.lower().endswith('.png')]
+        #for n in names:
+            #print(n.split('/')[-1])
+        return [n.split('/')[-1] for n in names]
+    
+    img_count = len([blob.name for blob in blobs if blob.name.lower().endswith('.png')])
+    return img_count
+
+
 def download_images(remote_folder, local_folder):
     if not remote_folder.startswith('images/'):
         remote_folder = os.path.join('images', remote_folder)
@@ -189,8 +206,9 @@ def download_images(remote_folder, local_folder):
         if blob.name.lower().endswith('.png'):
             print('d')
             file_path = os.path.join(local_folder, os.path.basename(blob.name))
-            blob.download_to_filename(file_path)
-            print(f"Downloaded {blob.name} to {file_path}")
+            if not os.path.exists(file_path):
+                blob.download_to_filename(file_path)
+                print(f"Downloaded {blob.name} to {file_path}")
 
 
 def download_descr_file(local_descr_filepath):
@@ -213,6 +231,20 @@ def fetch_images_as_bytes(blobs):
     images_bytes = []
     for blob in blobs:
         blob.download_bytes()
+
+
+def compare_dev_local_and_db_imgs(img_folder_name):
+    remote_imgs = get_remote_image_count(img_folder_name, list_imgs=True)
+    print(remote_imgs)
+    local_img_folder = os.path.join(curr_dir, 'image_base', img_folder_name)
+    local_img = [n for n in os.listdir(local_img_folder) if n.endswith('png')]
+    print(len(remote_imgs))
+    print(len(local_img))
+    ri_set = set(remote_imgs)
+    li_set = set(local_img)
+
+    diff = list(li_set - ri_set)
+    print(diff)
 
 
 if __name__ == "__main__":

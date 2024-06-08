@@ -246,6 +246,10 @@ def create_embeddings(api_key, embeddings_pickle_file, json_description_file_pat
     print('creating embeddings')
     embeddings_obj = OpenAIEmbeddings(api_key=api_key)
     descriptions = retrieve_contents_from_json(json_description_file_path)
+    if type(descriptions) == dict:
+        descriptions = list(descriptions.values())
+    else:
+        assert False, "invalid descr retrieve, expecting list of descriptions, {not img:descr} dict"
     create_and_store_embeddings_to_pickle(embeddings_obj, embeddings_pickle_file, descriptions)
 
 
@@ -264,6 +268,8 @@ def create_embeddings(api_key, embeddings_pickle_file, json_description_file_pat
 
 
 if __name__ == '__main__':
-    # d = ''
-    # rename_files_in_directory(d)
-    ...
+    api_key = ''
+    pkl_file = ''
+    descr_file = ''
+
+    create_embeddings(api_key, pkl_file, descr_file)
