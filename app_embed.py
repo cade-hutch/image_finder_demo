@@ -8,7 +8,7 @@ import subprocess
 from PIL import Image
 
 from image_retriever_filtered import retrieve_and_return
-from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, create_embeddings, update_embeddings, find_new_pic_files
+from pic_description_generator import generate_image_descrptions, rename_files_in_directory, get_new_pics_dir, create_embeddings, update_embeddings, rename_images, find_new_pic_files
 from utils import validate_openai_api_key, get_image_count, get_descr_filepath, query_for_related_descriptions
 #TODO: state for importing so firebase only inits once??
 from fb_storage_utils import (init_app, upload_images_from_list, upload_json_descriptions_file, download_descr_file,
@@ -75,8 +75,9 @@ def send_request(prompt):
             retrieve_time = format(end_t - start_t, '.2f')
 
             st.session_state.history.append(('text', f"Found {len(output_image_names)} images in {retrieve_time} seconds"))
-        except:
+        except Exception as e:
             print('error during request')
+            print(e)
             output_image_names = []
             st.session_state.history.append(('text', f"No results, try again."))
         
@@ -84,6 +85,8 @@ def send_request(prompt):
         for img in output_image_names:
             img_path = os.path.join(images_dir, img)
             if os.path.exists(img_path):
+                #TODO: *** this needs to hold Images instead of img_path strings, use output_image_names to pull from
+                #TODO:      dictionary {img_name : Image} -> then get rid of creating all Image from paths on query result
                 st.session_state.search_result_images.append(img_path)
 
 
@@ -160,21 +163,25 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
     
     if from_uploaded:
         uploads_to_firestore = []
-        for uploaded_img in uploaded_images:
-            file_path = os.path.join(images_dir, uploaded_img.name)
-            uploads_to_firestore.append(file_path)
+        uploaded_img_names = [img.name for img in uploaded_images]
+        new_uploaded_img_names = rename_images(images_dir, uploaded_img_names)
+        for uploaded_img, img_name in zip(uploaded_images, new_uploaded_img_names):
+            
+            file_path = os.path.join(images_dir, img_name)
             #write the uploaded file to the file system
             with open(file_path, "wb") as f:
                 f.write(uploaded_img.getbuffer())
+            uploads_to_firestore.append(file_path)
+            
 
         #TODO: One succuess bar, add images while looping?
         st.success(f"Images saved")
         
-        rename_files_in_directory(images_dir)
+        #TODO causing images to get reuploaded
         #FIREBASE - STORE IMAGES
         if uploads_to_firestore:
             print('uploading images to firebase')
-            upload_images_from_list(uploads_to_firestore)
+            upload_images_from_list(uploads_to_firestore) 
             print('finished uploading to firebase')
 
     #NOTE: dev-only param

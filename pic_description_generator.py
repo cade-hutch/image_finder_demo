@@ -4,6 +4,7 @@ import requests
 import os
 import json
 import time
+import random
 
 from langchain_community.embeddings import OpenAIEmbeddings
 
@@ -149,7 +150,31 @@ def find_new_pic_files(images_dir, descriptions_file):
     return new_images
 
 
-def rename_files_in_directory(directory_path):
+def rename_images(images_dir, img_names):
+    if not os.path.isdir(images_dir):
+        print("The provided path is not a directory.")
+        return
+
+    existing_img_names = [name for name in os.listdir(images_dir)]
+    return_img_names = []
+
+    for img_name in img_names:
+        new_img_name = img_name.replace(' ', '_')
+        new_img_name = new_img_name.replace('\u202F', '_')
+
+        if len(new_img_name) > 12:
+            new_img_name = new_img_name[-12:]
+        while new_img_name in existing_img_names:
+            img_num_list = [str(random.randint(0, 9)) for _ in range(5)]
+            img_num = "".join(img_num_list)
+            new_img_name = f"IMG{img_num}.png"
+
+        existing_img_names.append(new_img_name)
+        return_img_names.append(new_img_name)
+    return return_img_names
+
+
+def rename_files_in_directory(directory_path, return_list=False, new_images=None):
     """
     Renames all files in the specified directory by replacing spaces with underscores.
 
@@ -160,21 +185,35 @@ def rename_files_in_directory(directory_path):
     if not os.path.isdir(directory_path):
         print("The provided path is not a directory.")
         return
-
+    if new_images is None:
+        new_images = []
+    new_filepaths = []
     for filename in os.listdir(directory_path):
-        file_path = os.path.join(directory_path, filename)
+        add_to_new_filepaths = False
 
+        file_path = os.path.join(directory_path, filename)
+        if file_path in new_images:
+            add_to_new_filepaths = True
         if os.path.isfile(file_path):
             new_filename = filename.replace(' ', '_')
+            new_filename = new_filename.replace('\u202F', '_')
             if 'IMG' not in new_filename.upper():
-                new_filename = new_filename[-10:]
+                new_filename = new_filename[-11:]
             new_file_path = os.path.join(directory_path, new_filename)
 
+            if new_file_path not in new_filepaths:
+                new_filepaths.append(new_file_path)
+            else:
+                while new_file_path in new_file_path:
+                    new_file_path = new_file_path.split('.png')[0] + '1.png'
+                new_filepaths.append(new_file_path)
             # Rename the file
-            #TODO: need for all????
+            #TODO: check for and handle duplicate new names
             os.rename(file_path, new_file_path)
             if file_path != new_file_path:
                 print(f"Renamed '{filename}' to '{new_filename}'")
+    if return_list:
+        return new_filepaths
 
 
 def get_new_pics_dir(images_dir):#TODO: rename
