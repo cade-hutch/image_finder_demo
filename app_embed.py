@@ -153,6 +153,8 @@ def resize_image(image, fixed_height=200):
 
 
 def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True):
+    #empty dictionary of images 
+    st.session_state.name_and_image_dict = dict()
     #TODO keep folder as temp?
     image_dir_name = create_image_dir_name(st.session_state.user_openai_api_key)
     images_dir = os.path.join(IMAGE_BASE_DIR, image_dir_name)
@@ -234,8 +236,24 @@ def on_generate_button_submit(uploaded_images, from_uploaded=True, generate=True
     return True #TODO: handle good/bad return
 
 
+def create_images_dict(images_dir):
+    ...
+    names_and_images = {}
+    image_paths = [os.path.join(st.session_state.images_dir, img) for img in os.listdir(images_dir) if img.endswith('.png')]
+
+    for img_path in image_paths:
+        opened_img = Image.open(img_path)
+        cropped_img = resize_and_crop_image(opened_img)
+        names_and_images[img_path] = cropped_img
+    
+    return names_and_images
+
+
 def retrieval_page():
     images_dir = st.session_state.images_dir
+    if len(st.session_state.name_and_image_dict) == 0:
+        st.session_state.name_and_image_dict = create_images_dict(images_dir)
+
     images_count = get_image_count(images_dir)
     api_key = st.session_state.user_openai_api_key
     submit_more_images_button = st.button(label='Submit More Images')
@@ -284,14 +302,17 @@ def retrieval_page():
         elif item_type == 'image':
             images_to_display.append(content)
 
+    print("NAME_IMAGE_DICT LENGTH:", len(st.session_state.name_and_image_dict))
     #for i in range(0, len(images_to_display), 2):
     for i in range(0, len(st.session_state.search_result_images), 2):
         col1, col2 = st.columns(2)
-        res_img = resize_and_crop_image(Image.open(st.session_state.search_result_images[i]))
+        #res_img = resize_and_crop_image(Image.open(st.session_state.search_result_images[i])) #***REPLACED******
+        res_img = st.session_state.name_and_image_dict[st.session_state.search_result_images[i]]
         col1.image(res_img, use_column_width=True, caption="top result")
         
         if i + 1 < len(st.session_state.search_result_images): #TODO: handle when appending non results
-            res_img = resize_and_crop_image(Image.open(st.session_state.search_result_images[i+1]))
+            res_img = st.session_state.name_and_image_dict[st.session_state.search_result_images[i+1]]
+            #res_img = resize_and_crop_image(Image.open(st.session_state.search_result_images[i+1]))
             col2.image(res_img, use_column_width=True, caption='top result')
 
     #display rest of images in ranked order
@@ -299,22 +320,27 @@ def retrieval_page():
     for i in range(0, len(remaining_images), 4):
         col1, col2, col3, col4 = st.columns(4)
 
-        i1 = Image.open(remaining_images[i])
-        resized_i1 = resize_and_crop_image(i1)
-        col1.image(resized_i1, use_column_width=True)
+        # i1 = Image.open(remaining_images[i])
+        # resized_i1 = resize_and_crop_image(i1)
+        i1 = st.session_state.name_and_image_dict[remaining_images[i]]
+
+        col1.image(i1, use_column_width=True)
         
         if i + 1 < len(remaining_images):
-            i2 = Image.open(remaining_images[i+1])
-            resized_i2 = resize_and_crop_image(i2)
-            col2.image(resized_i2, use_column_width=True)
+            # i2 = Image.open(remaining_images[i+1])
+            # resized_i2 = resize_and_crop_image(i2)
+            i2 = st.session_state.name_and_image_dict[remaining_images[i+1]]
+            col2.image(i2, use_column_width=True)
         if i + 2 < len(remaining_images):
-            i3 = Image.open(remaining_images[i+2])
-            resized_i3 = resize_and_crop_image(i3)
-            col3.image(resized_i3, use_column_width=True)
+            # i3 = Image.open(remaining_images[i+2])
+            # resized_i3 = resize_and_crop_image(i3)
+            i3 = st.session_state.name_and_image_dict[remaining_images[i+2]]
+            col3.image(i3, use_column_width=True)
         if i + 3 < len(remaining_images):
-            i4 = Image.open(remaining_images[i+3])
-            resized_i4 = resize_and_crop_image(i4)
-            col4.image(resized_i4, use_column_width=True)
+            # i4 = Image.open(remaining_images[i+3])
+            # resized_i4 = resize_and_crop_image(i4)
+            i4 = st.session_state.name_and_image_dict[remaining_images[i+3]]
+            col4.image(i4, use_column_width=True)
 
         # col1.image(remaining_images[i], use_column_width=True)
         
@@ -483,6 +509,9 @@ def make_st_vars():
 
     if 'search_result_images' not in st.session_state:
         st.session_state.search_result_images = []
+    
+    if 'name_and_image_dict' not in st.session_state:
+        st.session_state.name_and_image_dict = dict()
 
 
 make_st_vars()
