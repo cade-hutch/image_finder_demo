@@ -95,8 +95,8 @@ def retrieve_and_return(image_descriptions_file, retrieval_prompt, api_key, filt
     #TODO: remove uneeded images_dir from args
     client = OpenAI(api_key=api_key)
     image_descriptions: dict = retrieve_contents_from_json(image_descriptions_file)
-    if len(image_descriptions) < 10:
-        filter = 1.0
+    if len(image_descriptions) * filter < 5.0:
+        filter = 0.5 #TODO: optimize for any amount of images/any filter
     if filter is not None:
         image_descriptions = rank_and_filter_descriptions(api_key, image_descriptions, retrieval_prompt, filter=filter)
         print(f"filtered descriptions -> only sending {len(image_descriptions)} to api")
@@ -106,7 +106,7 @@ def retrieve_and_return(image_descriptions_file, retrieval_prompt, api_key, filt
     retrieval_prompt_orig = retrieval_prompt
 
     response = client.chat.completions.create(
-        model=MODELS[4],
+        model=MODELS[0],
         messages=[
             {"role": "system", "content": get_prompt(image_descriptions, option=1)},
             {"role": "user", "content": f"{retrieval_prompt}"},
