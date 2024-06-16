@@ -106,7 +106,7 @@ def retrieve_and_return(image_descriptions_file, retrieval_prompt, api_key, filt
     retrieval_prompt_orig = retrieval_prompt
 
     response = client.chat.completions.create(
-        model=MODELS[0],
+        model=MODELS[4],
         messages=[
             {"role": "system", "content": get_prompt(image_descriptions, option=1)},
             {"role": "user", "content": f"{retrieval_prompt}"},
