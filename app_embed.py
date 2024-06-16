@@ -5,6 +5,7 @@ import time
 import numpy as np
 import streamlit as st
 import subprocess
+import random
 from PIL import Image
 
 from image_retriever_filtered import retrieve_and_return
@@ -265,6 +266,11 @@ def retrieval_page():
         st.session_state.show_retrieval_page = False
         st.session_state.upload_more_images = True
         return
+    
+    #side bar
+    st.sidebar.title("Random image, try to search for this")
+    random_img = random.choice(list(st.session_state.name_and_image_dict.values()))
+    st.sidebar.image(random_img, use_column_width=True)
 
     st.text("Search through {} images submitted by API Key: {}".format(images_count, api_key))
 
