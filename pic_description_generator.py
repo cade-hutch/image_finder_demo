@@ -1,4 +1,3 @@
-import openai
 import base64
 import requests
 import os
@@ -8,12 +7,15 @@ import random
 
 from langchain_community.embeddings import OpenAIEmbeddings
 
-from utils import (reduce_png_quality, retrieve_contents_from_json,
-                   create_and_store_embeddings_to_pickle, add_new_descr_to_embedding_pickle,
-                   remove_description_pretense)
+from utils import (reduce_png_quality, retrieve_contents_from_json, create_and_store_embeddings_to_pickle,
+                   add_new_descr_to_embedding_pickle, remove_description_pretense)
 
 IMAGE_QUESTION = 'As descriptive as possible, describe the contents of this image in a single sentence.'
 
+MODELS = [
+    "gpt-4-turbo",
+    "gpt-4o"
+]
 
 def headers(api_key):
   return {
@@ -23,28 +25,27 @@ def headers(api_key):
 
 
 def default_payload(image_question):
-  return {
-    #"model": "gpt-4-turbo",
-    "model": "gpt-4o",
-    "messages": [
-      {
-        "role": "user",
-        "content": [
-          {
-            "type": "text",
-            "text": f"{image_question}"
-          },
-          {
-            "type": "image_url",
-            "image_url": {
-              "url": ""
+    return {
+        "model": MODELS[1],
+        "messages": [
+            {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": f"{image_question}"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": ""
+                    }
+                }
+            ]
             }
-          }
-        ]
-      }
-    ],
-    "max_tokens": 400
-  }
+        ],
+        "max_tokens": 400
+    }
 
 
 def encode_image(image_path):
@@ -86,7 +87,6 @@ def append_to_json_file(file_path, data):
     if type(existing_data) == dict:
       existing_data.update(data)
     else:
-        #TODO: old json format
         append_to_old_json_file(file_path, existing_data, data)
         assert False, "deprecated JSON description file format"
 
@@ -117,12 +117,12 @@ def get_file_names_from_json(json_file_path):
         with open(json_file_path, 'r') as file:
             data = json.load(file)
 
-            # Check if the data is a dict or list of dicts
+            #check if the data is a dict or list of dicts
             if isinstance(data, dict):
-                # if dictionary, search for "file_name" keys
+                #if dictionary, search for "file_name" keys
                 return data.keys()
             elif isinstance(data, list):
-                # if list, search for "file_name" keys in each dictionary
+                #if list, search for "file_name" keys in each dictionary
                 return [item.get("file_name", None) for item in data]
             else:
                 print("Invalid JSON format. Expected a dictionary or a list of dictionaries.")
@@ -171,6 +171,7 @@ def rename_images(images_dir, img_names):
 
         existing_img_names.append(new_img_name)
         return_img_names.append(new_img_name)
+
     return return_img_names
 
 
@@ -189,11 +190,9 @@ def rename_files_in_directory(directory_path, return_list=False, new_images=None
         new_images = []
     new_filepaths = []
     for filename in os.listdir(directory_path):
-        add_to_new_filepaths = False
 
         file_path = os.path.join(directory_path, filename)
-        if file_path in new_images:
-            add_to_new_filepaths = True
+
         if os.path.isfile(file_path):
             new_filename = filename.replace(' ', '_')
             new_filename = new_filename.replace('\u202F', '_')
@@ -207,7 +206,7 @@ def rename_files_in_directory(directory_path, return_list=False, new_images=None
                 while new_file_path in new_file_path:
                     new_file_path = new_file_path.split('.png')[0] + '1.png'
                 new_filepaths.append(new_file_path)
-            # Rename the file
+            #rename the file
             #TODO: check for and handle duplicate new names
             os.rename(file_path, new_file_path)
             if file_path != new_file_path:
@@ -229,8 +228,9 @@ def get_new_pics_dir(images_dir):#TODO: rename
 
 def generate_image_descrptions(new_pics, images_dir, api_key):
     base_dir = os.path.dirname(os.path.dirname(images_dir))
-    descriptions_folder_path = os.path.join(base_dir, 'json')
     base_name = os.path.basename(images_dir)
+
+    descriptions_folder_path = os.path.join(base_dir, 'json')
     json_info_file_path = os.path.join(descriptions_folder_path, 'info', base_name + '_info.json')
     json_description_file_path = os.path.join(descriptions_folder_path, base_name + '_descriptions.json')
 
@@ -276,34 +276,20 @@ def generate_image_descrptions(new_pics, images_dir, api_key):
 
 
 def update_embeddings(api_key, embeddings_pickle_file, new_descriptions):
-    print('updating embeddings')
+    print('Updating embeddings....')
     embeddings_obj = OpenAIEmbeddings(api_key=api_key)
     add_new_descr_to_embedding_pickle(embeddings_obj, embeddings_pickle_file, new_descriptions)
     
 
 def create_embeddings(api_key, embeddings_pickle_file, json_description_file_path):
-    print('creating embeddings')
+    print('Creating embeddings....')
     embeddings_obj = OpenAIEmbeddings(api_key=api_key)
     descriptions = retrieve_contents_from_json(json_description_file_path)
     if type(descriptions) == dict:
         descriptions = list(descriptions.values())
     else:
-        assert False, "invalid descr retrieve, expecting list of descriptions, {not img:descr} dict"
+        assert False, "Invalid descr retrieve, expecting list of descriptions, not 'img:descr' dict"
     create_and_store_embeddings_to_pickle(embeddings_obj, embeddings_pickle_file, descriptions)
-
-
-# def handle_embeddings(api_key, base_name, new_descriptions, json_description_file_path):
-#     start_time_pickle = time.perf_counter()
-#     embeddings_obj = OpenAIEmbeddings(api_key=api_key)
-#     embedding_pickles_folder_path = os.path.join(os.path.dirname(os.path.dirname(json_description_file_path)), 'embeddings')
-#     pickle_file = os.path.join(embedding_pickles_folder_path, base_name + '.pkl')
-#     if os.path.exists(pickle_file):
-#         add_new_descr_to_embedding_pickle(embeddings_obj, pickle_file, new_descriptions)
-#     else:
-#         descriptions = get_descriptions_from_json(json_description_file_path)
-#         create_and_store_embeddings_to_pickle(embeddings_obj, pickle_file, descriptions)
-#     end_time_pickle = time.perf_counter()
-#     print(f"finished creating/adding embeddings in {round(end_time_pickle - start_time_pickle, 2)}")
 
 
 if __name__ == '__main__':

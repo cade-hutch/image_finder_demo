@@ -6,7 +6,7 @@ import re
 
 from openai import OpenAI
 
-from utils import (create_logging_entry, store_logging_entry, query_for_related_descriptions,
+from utils import (create_logging_entry, store_logging_entry,
                    retrieve_contents_from_json, rank_and_filter_descriptions)
 from fb_db_utils import firebase_store_query_log
 
@@ -92,7 +92,6 @@ def handle_faulty_response_format(res):
 
 
 def retrieve_and_return(image_descriptions_file, retrieval_prompt, api_key, filter=0.1, return_filter=False):
-    #TODO: remove uneeded images_dir from args
     client = OpenAI(api_key=api_key)
     image_descriptions: dict = retrieve_contents_from_json(image_descriptions_file)
     if len(image_descriptions) * filter < 5.0:
@@ -100,6 +99,7 @@ def retrieve_and_return(image_descriptions_file, retrieval_prompt, api_key, filt
     if filter is not None:
         image_descriptions = rank_and_filter_descriptions(api_key, image_descriptions, retrieval_prompt, filter=filter)
         print(f"filtered descriptions -> only sending {len(image_descriptions)} to api")
+
     req_start_time = time.perf_counter()
     print('-----')
 
@@ -120,7 +120,6 @@ def retrieve_and_return(image_descriptions_file, retrieval_prompt, api_key, filt
     output_images = []
     try:
         output_images = ast.literal_eval(res)
-        #print("literal_eval:", output_images)
     except ValueError:
         print("ValueError: The response is not a valid Python literal.")
     except SyntaxError:

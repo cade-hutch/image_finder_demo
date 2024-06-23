@@ -488,9 +488,9 @@ def main():
 def make_st_vars():
     #app start point
     if 'firebase_init' not in st.session_state:
-        print('initing app')
+        print('initing database app')
         st.session_state.firebase_init = True
-        init_app()
+        init_app() #for debugging - verify fb_storage_utils.py isnt causing blocking issues
 
     if 'submitted_api_key' not in st.session_state:
         st.session_state.submitted_api_key = False

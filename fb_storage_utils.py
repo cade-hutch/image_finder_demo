@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-import json
 import io
 import requests
 import datetime
@@ -42,31 +41,35 @@ bucket = storage.bucket('image-finder-demo.appspot.com')
 
 
 def init_app(init_name='app'):
-    print('init app dud')
+    print('db app inited')
 
 
 def upload_images_from_list(image_paths, skip_upload=False):
     """
     store images from list of paths to folder in firebase
     """
+    SLEEP_TIME = 15
+
     if not skip_upload:
         bucket = storage.bucket('image-finder-demo.appspot.com')
         folder_name = os.path.basename(os.path.dirname(image_paths[0]))
         num_imgs = len(image_paths)
+        sleeps = 0
         for i, image_pathname in enumerate(image_paths):
             if image_pathname.endswith((".png")):
                 image_name = os.path.basename(image_pathname)
                 t_start = time.perf_counter()
                 blob = bucket.blob(os.path.join('images', folder_name, image_name))
                 t_end1 = time.perf_counter()
-                print('finished db connection in {}s'.format(round(t_end1 - t_start, 2)))
+                print('Made db connection in {}s'.format(round(t_end1 - t_start, 2)))
                 try_again = False
                 try:
                     blob.upload_from_filename(image_pathname)
                 except Exception as e:
                     print(e)
                     print('file upload failed...sleeping and trying again')
-                    time.sleep(15)
+                    time.sleep(SLEEP_TIME)
+                    sleeps += 1
                     try_again = True
                     print('trying again')
                 if try_again:
@@ -74,7 +77,9 @@ def upload_images_from_list(image_paths, skip_upload=False):
                     #t_end = time.perf_counter() - 15 TODO: keep sleep in time calc??
 
                 t_end = time.perf_counter()
-                print('({}/{}) finished {} upload in {}s'.format(i+1, num_imgs, image_name, round(t_end - t_start, 2)))
+                print('({}/{}) finished {} upload in {}s with sleep time of {}s'.format(i+1, num_imgs, image_name,
+                                                                                        round(t_end - t_start, 2),
+                                                                                        (SLEEP_TIME * sleeps)))
 
 
 def upload_images_from_dir(folder_path):
