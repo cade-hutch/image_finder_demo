@@ -1,9 +1,7 @@
-from datetime import datetime, timezone
 import uuid
 import json
 import os
 import ast
-import time
 
 import firebase_admin
 from firebase_admin import credentials
@@ -144,7 +142,6 @@ def firebase_store_query_log(user_id, logging_entry, db=None):
     }
 
     new_query_doc_ref.set(query_data)
-    #print(f'Query added with ID: {query_id}')
 
 
 def sync_log_file_to_db(db, log_json_file, step_through=False):
