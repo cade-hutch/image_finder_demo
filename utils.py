@@ -1,7 +1,6 @@
 import os
 import json
 import pickle
-import time
 import faiss
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
@@ -35,7 +34,7 @@ def are_all_files_png(directory_path):
     for filename in os.listdir(directory_path):
         file_path = os.path.join(directory_path, filename)
 
-        # Check if it's a file and if the extension is not .png
+        # check if it's a file and if the extension is not .png
         if os.path.isfile(file_path) and not filename.lower().endswith('.png'):
             if not filename.endswith('.DS_Store'):
                 print('invalid folder: contains files that are not pngs')
@@ -53,9 +52,9 @@ def descriptions_file_up_to_date(images_dir, json_file_path):
     
     png_names = []
     for entry in os.listdir(images_dir):
-        # Construct the full path of the entry
+        #construct the full path of the entry
         full_path = os.path.join(images_dir, entry)
-        # Check if the entry is a file and has a .png extension
+        #check if the entry is a file and has a .png extension
         if os.path.isfile(full_path) and entry.lower().endswith('.png'):
             png_names.append(entry)
 
